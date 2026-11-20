@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Red Alert 2 / Yuri's Revenge - Nexvyn OS Oynanış Galerisi</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f141c; color: #e1e7f0; margin: 0; padding: 20px; }
+        h1 { color: #ff4757; text-align: center; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #70a1ff; margin-bottom: 25px; font-size: 15px; }
+        .stats-badge { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: #1e272e; border: 1px solid #2f3542; padding: 10px 20px; border-radius: 8px; text-align: center; }
+        .stat-card .val { font-size: 20px; font-weight: bold; color: #2ed573; }
+        .stat-card .lbl { font-size: 12px; color: #a4b0be; text-transform: uppercase; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px; max-width: 1300px; margin: 0 auto; }
+        .card { background: #1e272e; border-radius: 10px; overflow: hidden; border: 1px solid #3742fa33; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .card img { width: 100%; display: block; border-bottom: 1px solid #2f3542; cursor: pointer; transition: transform 0.2s; }
+        .card img:hover { transform: scale(1.01); }
+        .card-body { padding: 15px; }
+        .stage { font-size: 12px; background: #ff4757; color: #fff; padding: 3px 8px; border-radius: 4px; display: inline-block; font-weight: bold; margin-bottom: 8px; }
+        .card-title { font-size: 16px; font-weight: bold; margin-bottom: 6px; color: #ffffff; }
+        .card-desc { font-size: 13px; color: #ced6e0; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <h1>Red Alert 2 / Yuri's Revenge - Nexvyn OS</h1>
+    <div class="subtitle">Nintendo Switch AArch64 / Nexvyn OS Native Windowed ABI (52.8 FPS Doğrulandı)</div>
+
+    <div class="stats-badge">
+        <div class="stat-card"><div class="val">52.8 FPS</div><div class="lbl">Performans</div></div>
+        <div class="stat-card"><div class="val">800x600x16</div><div class="lbl">DirectDraw Çözünürlük</div></div>
+        <div class="stat-card"><div class="val">44.1 kHz</div><div class="lbl">DirectSound SDL2</div></div>
+        <div class="stat-card"><div class="val">145 MB</div><div class="lbl">Binary (ra2.nxvmod)</div></div>
+        <div class="stat-card"><div class="val">Zero-Copy</div><div class="lbl">OpenGL ES 3.2</div></div>
+    </div>
+
+    <div class="gallery">
+        <div class="card">
+            <img src="screenshots/2026-11-09_20-11_play_01_main_menu.png" alt="Ana Menü">
+            <div class="card-body">
+                <span class="stage">AŞAMA 1</span>
+                <div class="card-title">Ana Menü ve Müzik Başlatma</div>
+                <div class="card-desc">Red Alert 2 ana menüsü açıldı. Hell March 2 fon müziği ve analog imleç aktif.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="screenshots/2026-11-09_20-11_play_02_single_menu.png" alt="Single Player Menüsü">
+            <div class="card-body">
+                <span class="stage">AŞAMA 2</span>
+                <div class="card-title">Single Player Alt Menüsü</div>
+                <div class="card-desc">Single Player seçeneğine tıklandı; Campaign ve Skirmish modları listelendi.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="screenshots/2026-11-09_20-11_play_03_skirmish_lobby.png" alt="Skirmish Lobisi">
+            <div class="card-body">
+                <span class="stage">AŞAMA 3</span>
+                <div class="card-title">Skirmish (Çarpışma) Lobisi</div>
+                <div class="card-desc">Özel oyun lobisine giriş yapıldı. Harita, ülke ve yapay zeka bot parametreleri hazırlandı.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="screenshots/2026-11-09_20-11_play_04_loading_battle.png" alt="Yükleme Ekranı">
+            <div class="card-body">
+                <span class="stage">AŞAMA 4</span>
+                <div class="card-title">Taktik Harita Yüklemesi</div>
+                <div class="card-desc">Harita yükleniyor; TacticalMap, Z-Buffer ve oyuncu birimleri belleğe aktarılıyor.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="screenshots/2026-11-09_20-11_play_05_battle_started.png" alt="Savaş Başladı">
+            <div class="card-body">
+                <span class="stage">AŞAMA 5</span>
+                <div class="card-title">Savaş Başladı (Battle Control Online)</div>
+                <div class="card-desc">Taktik haritaya iniş yapıldı. Oyuncunun MCV (Mobil İnşaat Aracı) ve koruma tankları sahada.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="screenshots/2026-11-09_20-11_play_06_mcv_deployed.png" alt="MCV Kuruldu">
+            <div class="card-body">
+                <span class="stage">AŞAMA 6</span>
+                <div class="card-title">İnşaat Merkezi Kuruldu (Deploy)</div>
+                <div class="card-desc">MCV açılarak İnşaat Merkezi kuruldu; sağ taraftaki inşaat ve üretim çubuğu (Sidebar) aktifleşti.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="screenshots/2026-11-09_20-11_play_07_battle_action.png" alt="Aktif Oynanış">
+            <div class="card-body">
+                <span class="stage">AŞAMA 7</span>
+                <div class="card-title">Gerçek Zamanlı Çarpışma (52.8 FPS)</div>
+                <div class="card-desc">Taktik haritada aktif savaş yönetimi, bina inşaatı ve birim hareketleri akıcı şekilde sürüyor.</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

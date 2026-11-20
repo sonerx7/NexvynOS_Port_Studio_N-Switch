@@ -1,0 +1,29 @@
+{
+  "slug": "cs16",
+  "storeCategory": "action",
+  "publicFiles": [
+    "app.json",
+    "cs16.nxvmod",
+    "icon.png",
+    "LICENSE",
+    "NOTICE.md",
+    "lang/de.json",
+    "lang/en.json",
+    "lang/es.json",
+    "lang/fr.json",
+    "lang/ja.json",
+    "lang/ko.json",
+    "lang/tr.json",
+    "lang/zh.json"
+  ],
+  "localData": [
+    {
+      "from": "cstrike",
+      "to": "game/cstrike"
+    },
+    {
+      "from": "valve",
+      "to": "game/valve"
+    }
+  ]
+}

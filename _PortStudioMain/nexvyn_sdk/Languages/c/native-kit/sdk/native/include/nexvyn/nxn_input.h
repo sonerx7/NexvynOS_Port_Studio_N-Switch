@@ -1,0 +1,164 @@
+/* Nexvyn Native SDK - input: controller (player 1 + handheld), touch screen, USB keyboard.
+ *
+ * Button bits are the same as Nexvyn OS's pad bits (and the console's HID order). confirm / cancel follow the
+ * user's button mapping in Nexvyn OS (System Settings), so an app that uses NXN_ACT_CONFIRM / NXN_ACT_CANCEL feels
+ * the same as every other Nexvyn app.
+ *
+ * Threads: poll from one thread (normally the main thread, once per frame): "pressed" and "released" are kept per
+ * app between two polls, so two polling threads would each miss edges the other consumed. nxn_input_touch and
+ * nxn_input_key_held read the state of the last poll and may be called from any app thread. Inside Nexvyn OS input is
+ * inactive while the window has no focus or is suspended/stopping. Focus loss, suspend and quit cancel pending
+ * activations; an observed pad hold may report one release. Handle lifecycle cancellation separately from a click.
+ * A focused short press between polls stays latched. Memory: written into the caller's structs; nothing to free. */
+#ifndef NEXVYN_NXN_INPUT_H
+#define NEXVYN_NXN_INPUT_H
+
+#include "nxn_base.h"
+
+NXN_EXTERN_C_BEGIN
+
+/* Button bits (bits 0..15, inside the int range of an enum constant; tested against the uint64_t masks below). A button
+ * at bit 31 or above would be a uint64_t macro like NXN_CAP_* (nxn_base.h), never an enum constant. */
+enum {
+    NXN_BTN_A = 1ull << 0, NXN_BTN_B = 1ull << 1, NXN_BTN_X = 1ull << 2, NXN_BTN_Y = 1ull << 3,
+    NXN_BTN_LSTICK = 1ull << 4, NXN_BTN_RSTICK = 1ull << 5, NXN_BTN_L = 1ull << 6, NXN_BTN_R = 1ull << 7,
+    NXN_BTN_ZL = 1ull << 8, NXN_BTN_ZR = 1ull << 9, NXN_BTN_PLUS = 1ull << 10, NXN_BTN_MINUS = 1ull << 11,
+    NXN_BTN_LEFT = 1ull << 12, NXN_BTN_UP = 1ull << 13, NXN_BTN_RIGHT = 1ull << 14, NXN_BTN_DOWN = 1ull << 15
+};
+
+/* Logical actions (Nexvyn OS's mapping). */
+enum {
+    NXN_ACT_CONFIRM = 1u << 0,
+    NXN_ACT_CANCEL = 1u << 1
+};
+
+typedef struct nxn_input_state {
+    uint32_t size;
+    uint32_t actions;          /* NXN_ACT_* held */
+    uint64_t buttons;          /* NXN_BTN_* held */
+    uint64_t pressed;          /* went down since the previous nxn_input_poll */
+    uint64_t released;         /* went up since the previous nxn_input_poll */
+    float lx, ly, rx, ry;      /* sticks, -1..1, y up */
+    uint32_t actions_pressed;  /* NXN_ACT_* that went down */
+    uint32_t touch_count;      /* touches this frame (see nxn_input_touch) */
+} nxn_input_state;
+
+typedef struct nxn_touch {
+    uint32_t size;
+    uint32_t id;      /* stable while the finger stays down */
+    float x, y;       /* window surface pixels; standalone: 1280x720 screen pixels */
+} nxn_touch;
+
+/* Reads the controllers and the touch screen. Call once per frame. */
+NXN_API nxn_result nxn_input_poll(nxn_input_state* out);
+/* Touch `index` (0 <= index < nxn_input_state.touch_count of the last poll). Outside that range it fails: inside Nexvyn
+ * OS with NXN_ERR_INVALID (also while the window has no focus; touch_count is 0 then), in a stand-alone .nro with
+ * NXN_ERR_NOT_FOUND. Read touches only up to touch_count and treat any negative result as "no touch". */
+NXN_API nxn_result nxn_input_touch(uint32_t index, nxn_touch* out);
+/* USB keyboard: is the key with this HID usage id (4 = 'a' ... see the USB HID tables) held? Usage ids 224..231 are the
+ * modifiers (224 left Ctrl, 225 left Shift, 226 left Alt, 227 left GUI, 228..231 the right ones; Nexvyn OS reports the
+ * modifier state per kind, so the left and the right key of a pair are held together). */
+NXN_API int nxn_input_key_held(uint32_t hid_usage);
+
+/* ---- USB keyboard events, USB mouse and typed text (Native 1.1; check nxn_caps.features for NXN_CAP_USB_INPUT).
+ * Without NXN_CAP_USB_INPUT these return NXN_ERR_UNSUPPORTED (nxn_input_key_poll and nxn_input_text: 0). Inside Nexvyn
+ * OS they work only while the window has focus. */
+
+typedef struct nxn_key_event {
+    uint32_t size;
+    uint32_t usage;  /* USB HID usage id (4 = 'a'; 224..231 modifiers) */
+    uint32_t down;   /* 1 pressed (a held key repeats as presses), 0 released */
+    uint32_t mods;   /* NXN_MOD_* held after this event */
+} nxn_key_event;
+
+enum {
+    NXN_MOD_SHIFT = 1u << 0, NXN_MOD_CTRL = 1u << 1, NXN_MOD_ALT = 1u << 2, NXN_MOD_GUI = 1u << 3
+};
+
+/* Takes the oldest key event off the queue (64 deep, in the order the keys went down and up: a tap inside one frame is
+ * not lost). Returns 1 when an event was written, 0 when there is none, a negative nxn_result for a bad argument.
+ * Windowed host overflow policy: if the app falls behind the 64-transition buffer, intermediate taps/repeats are
+ * discarded and the consumer receives releases before new downs to restore current held state. Drain until 0, as a
+ * repair can span more than 64 events. Focus loss/suspend discard pending presses and preserve releases owed to this
+ * consumer, even if focus returns before it polls. No typed text is reconstructed from key state.
+ * Thread: one consumer thread. Memory: written into the caller's struct. */
+NXN_API int nxn_input_key_poll(nxn_key_event* out);
+
+/* Text the user typed since the last call, UTF-8 and NUL terminated, as the system's keyboard produced it (layout, dead
+ * keys and the on-screen keyboard included; the keys themselves also arrive through nxn_input_key_poll). Returns the
+ * number of bytes written without the NUL (0: none), a negative nxn_result for a bad argument. What does not fit in
+ * `cap` stays for the next call. Thread: one consumer thread. Memory: written into the caller's buffer. */
+NXN_API int nxn_input_text(char* out, size_t cap);
+
+/* Tells Nexvyn OS that the app has a text field the user is editing (wanted = 1) or not any more (0). While it is 1 the
+ * system's on-screen keyboard (or the system keyboard, per the user's setting) opens by itself unless a USB keyboard is
+ * in use, and what the user types arrives through nxn_input_text and nxn_input_key_poll as always. Call it when a
+ * text field gets or loses focus (for ImGui: io.WantTextInput changed); calling it again with the same value is free.
+ * The request ends with the window (close, minimise lose it) and while a dialog is on top. Returns NXN_OK, NXN_ERR_UNSUPPORTED
+ * in the stand-alone library (nothing to open: use the application's own input; NXN_CAP_TEXT_REQUEST is not set).
+ * Thread: any app thread. Memory: none. (Native 1.1 add-on, NXN_CAP_TEXT_REQUEST) */
+NXN_API nxn_result nxn_input_text_request(int wanted);
+
+enum {
+    NXN_MOUSE_LEFT = 1u << 0, NXN_MOUSE_RIGHT = 1u << 1, NXN_MOUSE_MIDDLE = 1u << 2
+};
+
+typedef struct nxn_mouse {
+    uint32_t size;
+    uint32_t present;        /* 1 when the pointer is inside the window's content */
+    float x, y;              /* position in display pixels (the surface of nxn_display_open), y down */
+    float dx, dy;            /* movement since the previous nxn_input_mouse call, in display pixels */
+    float wheel_x, wheel_y;  /* scrolling since the previous call, in notches (+y = away from the user = up) */
+    uint32_t buttons;        /* NXN_MOUSE_* held */
+    uint32_t pressed;        /* NXN_MOUSE_* that went down since the previous call (a click inside one frame is kept) */
+    uint32_t released;       /* NXN_MOUSE_* that went up since the previous call */
+} nxn_mouse;
+
+/* The pointer Nexvyn OS shows over the window (a USB mouse, or the controller pointer), as a mouse. The first call
+ * turns the app into a mouse user: from then on the pointer no longer also counts as touch 0 in nxn_input_touch (an
+ * app that never calls this keeps the old behaviour, the pointer acts as a finger). Call it once per frame.
+ * Thread: one consumer thread (the main thread). Memory: written into the caller's struct. */
+NXN_API nxn_result nxn_input_mouse(nxn_mouse* out);
+
+/* ---- action -> button mapping (NXN_CAP_INPUT_ACTIONS, windowed apps). The user maps controller buttons to functions in
+ * Settings > Controllers ("select", "back", "context", "close_window", "launcher", "overview", "switch_prev", "switch_next",
+ * "desktop", "notifications", "control_center", "keyboard", "screenshot", "search", "assistant", "scroll_mode", "zoom",
+ * "volume_up", "volume_down", "brightness_up", "brightness_down", "lock", "nav_up", "nav_down", "nav_left", "nav_right").
+ * This returns the NXN_BTN_* mask of the physical buttons the user mapped to `action` now (0 = none), so an app can offer
+ * "confirm" and "cancel" on the buttons the user chose: test it against nxn_input_state.buttons / .pressed. The mask follows
+ * the setting within a frame: read it when you need it, do not cache it for a whole session. NXN_ERR_NOT_FOUND for an unknown name. Without the cap: NXN_ERR_UNSUPPORTED.
+ * Thread: any app thread (it reads a snapshot the OS main thread keeps per window). Memory: none. */
+NXN_API nxn_result nxn_input_action_buttons(const char* action, uint64_t* mask);
+
+/* ---- relative mouse and several controllers (NXN_CAP_INPUT_ROUTER; add-on, ABI v1 is unchanged).
+ * Without the cap every function here returns NXN_ERR_UNSUPPORTED (nxn_input_pad_count: 0). */
+
+/* Relative mouse (mouse look): enabled = 1 asks Nexvyn OS to stop moving its cursor over the window and to collect the
+ * mouse motion for nxn_input_mouse_delta; 0 gives the cursor back. It works only while the window has focus, only when
+ * the user did not turn "Relative mouse" off in Settings (then it returns NXN_ERR_DENIED) and ends with the window.
+ * Thread: any app thread. Memory: none. */
+NXN_API nxn_result nxn_input_relative_mouse(int enabled);
+/* Mouse motion in display pixels since the previous call (sum, then zero). Both outputs are 0 while the mode is off. */
+NXN_API nxn_result nxn_input_mouse_delta(float* dx, float* dy);
+
+typedef struct nxn_pad_state {
+    uint32_t size;
+    uint32_t index;      /* 0 = player 1 (or the handheld controls), up to 7 */
+    uint32_t connected;  /* 1 when the controller is connected */
+    uint32_t active;     /* 1 for the controller that pressed a button last */
+    uint64_t buttons;    /* NXN_BTN_* held */
+    uint64_t pressed;    /* went down since the previous nxn_input_pad_poll of this pad */
+    uint64_t released;   /* went up since the previous nxn_input_pad_poll of this pad */
+} nxn_pad_state;
+
+/* Number of connected controllers (0 while the window has no focus). Thread: any app thread. */
+NXN_API int nxn_input_pad_count(void);
+/* State of controller `pad` (0 <= pad < 8). Edges belong to this app, kept per pad between polls.
+ * Focus acquisition or connection with a button held suppresses that button until release; shell/other-app presses
+ * are not replayed. Disconnect cancels the slot and its pending edges. On NXN_ERR_NOT_FOUND, cancel that controller's
+ * held actions/captures; a reconnect starts fresh. NXN_ERR_INVALID for a bad argument. Thread: one consumer per pad. */
+NXN_API nxn_result nxn_input_pad_poll(uint32_t pad, nxn_pad_state* out);
+
+NXN_EXTERN_C_END
+
+#endif /* NEXVYN_NXN_INPUT_H */

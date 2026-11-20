@@ -1,0 +1,37 @@
+{
+  "id": "com.nexvyn.inputlab.lua",
+  "name": {
+    "de": "Eingabelabor (lua)",
+    "en": "Input Lab (lua)",
+    "es": "Laboratorio de entrada (lua)",
+    "fr": "Laboratoire de saisie (lua)",
+    "ja": "入力ラボ (lua)",
+    "ko": "입력 실험실 (lua)",
+    "tr": "Girdi Laboratuvarı (lua)",
+    "zh": "输入实验室 (lua)"
+  },
+  "version": "1.0.0",
+  "build": 1,
+  "type": "app",
+  "runtime": "lua",
+  "minSdk": "1.12",
+  "targetSdk": "1.15",
+  "uiApi": 2,
+  "uiTheme": 2,
+  "dataSchema": 1,
+  "author": "Nexvyn Team",
+  "category": "utilities",
+  "permissions": [],
+  "description": "Touch, drag, nested scrolling, text input and gesture interaction diagnostics.",
+  "window": {
+    "width": 860,
+    "height": 560,
+    "minWidth": 360,
+    "minHeight": 440
+  },
+  "perfBudget": {
+    "maxRamMb": 16,
+    "targetFps": 60,
+    "profile": "utility"
+  }
+}

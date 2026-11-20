@@ -1,0 +1,10 @@
+{
+  "app.title": "카운터 스트라이크 1.6",
+  "btn.browse": "게임 폴더 선택",
+  "btn.verify": "파일 검증",
+  "status.ready": "파일 검증 완료",
+  "lbl.no_dir": "폴더가 선택되지 않았습니다. CS 1.6 폴더를 선택하세요.",
+  "sec.game_path": "게임 설치 및 파일 검증",
+  "status.engine_missing": "런처 미리 보기입니다. Xash3D 게임 엔진은 포함되어 있지 않습니다.",
+  "status.data_missing": "없거나 유효하지 않음"
+}

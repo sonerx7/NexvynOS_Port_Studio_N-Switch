@@ -1,0 +1,10 @@
+{
+  "app.title": "Counter-Strike 1.6",
+  "btn.browse": "Oyun Klasörü Seç",
+  "btn.verify": "Dosyaları Doğrula",
+  "status.ready": "Dosyalar Doğrulandı",
+  "lbl.no_dir": "Henüz oyun klasörü seçilmedi. CS 1.6 klasörünüzü seçin.",
+  "sec.game_path": "Oyun Kurulumu ve Dosya Doğrulama",
+  "status.engine_missing": "Başlatıcı önizlemesi. Xash3D oyun motoru bu pakette yok.",
+  "status.data_missing": "Eksik veya geçersiz"
+}

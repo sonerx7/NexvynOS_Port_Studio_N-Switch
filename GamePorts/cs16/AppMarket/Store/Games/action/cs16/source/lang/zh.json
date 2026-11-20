@@ -1,0 +1,10 @@
+{
+  "app.title": "反恐精英 1.6",
+  "btn.browse": "选择游戏目录",
+  "btn.verify": "验证文件",
+  "status.ready": "文件已验证",
+  "lbl.no_dir": "尚未选择游戏目录。请选择您的 CS 1.6 文件夹。",
+  "sec.game_path": "游戏安装与文件校验",
+  "status.engine_missing": "启动器预览。此软件包不包含 Xash3D 游戏引擎。",
+  "status.data_missing": "缺失或无效"
+}

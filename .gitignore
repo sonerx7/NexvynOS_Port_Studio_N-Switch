@@ -1,83 +1,97 @@
-# Build output
-build/
-build-game/
-# Native Linux builds (build-linux.sh)
-build-linux/
-build-linux-game/
-# Native macOS builds (build-macos.sh)
-build-macos/
-build-macos-game/
-build-macos-compat/
-build-macos-game-compat/
-# tools/deps-macos.sh's libraries, tools/package_macos.py's apps
-deps-macos/
-dist/
-# xwin's download cache, made wherever it is run (setup.sh)
-.xwin-cache/
-out/
-cmake-build-*/
-*.obj
-*.pdb
-*.ilk
-*.exp
-*.lib
+# ==============================================================================
+# Nexvyn Port Studio - Public Git Ignore
+# ==============================================================================
 
-# IDE
-.vs/
-.vscode/
-*.user
-*.lnk
-
-# Python
-.venv/
-__pycache__/
-*.pyc
-
-# --- Retail game files: NOT redistributed (REPO_RULES section 3) ---
-# Command & Conquer: Red Alert 2 / Yuri's Revenge (c) 2000-2001 Westwood Studios / EA.
-# Bring your own copy; Setup.cmd copies it into game/.
-game/
-# setup.sh links game to the CrossOver bottle's install, and git sees a link
-# as a file, which game/ does not match.
-/game
-original/
-*.exe
-*.EXE
-*.dll
-*.DLL
-*.mix
-*.MIX
-*.mmx
-*.yro
-*.iso
+# Büyük Paketler ve Arşivler (GitHub 100MB Sınırı)
 *.zip
+*.7z
+*.rar
+*.tar.gz
+*.tar.xz
+*.iso
+*.bin
+*.vhd
 
-# Generated from the binary, never committed: the lifted C, the catalog,
-# RTTI/vtable dumps and every other analysis of gamemd.exe.
-src/recomp/gen/
-src/recomp/gen_game/
+# Switch & Binary Çıktıları
+*.nro
+*.elf
+*.nacp
+*.nca
+*.nsp
+*.xci
+*.nxvapp
+*.nxvmod
+*.nxvmod.debug
+*.so
+*.dll
+*.dylib
+*.exe
+*.o
+*.obj
+*.a
+
+# Derleme, Recomp ve Ara Klasörler
+build/
+build_*/
+bin/
+obj/
+dist/
+out/
+target/
+cmake-build-*/
+.cache/
+game/
 work/
 analysis/
+src/recomp/gen/
+src/recomp/gen_game/
+/**/src/recomp/gen/
+/**/src/recomp/gen_game/
+/**/work/
+/**/game/
 
-# Recordings and logs of runs
-*.mp4
-*.log
+# Yerel Başlatıcı (Web harici)
+/start.bat
 
-# OS
+# Telifli / Büyük Oyun Assetleri
+*.mix
+*.mpq
+*.wad
+*.bsp
+*.vpk
+*.pak
+*.bik
+*.smk
+*.csf
+
+# Emülatör & IDE & Sistem Kalıntıları
+.emulator_profile/
+.vscode/
+.idea/
+*.swp
+*.suo
+*.user
 Thumbs.db
 Desktop.ini
+.DS_Store
 
-# Made by Setup.cmd
-* (recomp).cmd
-# Made by setup.sh (macOS, Linux)
-* (recomp).command
-* (recomp).sh
-build-trace/
+# Geçici / Log Dosyaları
+*.log
+*.tmp
+_temp*
+_move_temp*
 
-# LAN game frames (tools/lan/*.args)
-lan-frames/
-
-# Mods you add (mods/README.md): third-party content, never committed
-mods/yr/
-mods/ra2/
-mods-test/
+# Stüdyo kişisel verileri ve SDK yedekleri
+_LocalData/
+/_PortStudioMain/_SdkBackups/
+/_PortStudioMain/_SdkCandidates/
+__pycache__/
+.port-studio-*/
+/_RealesedBuilds/*
+!/_RealesedBuilds/README.md
+!/_RealesedBuilds/game/
+!/_RealesedBuilds/software/
+/_RealesedBuilds/game/*
+/_RealesedBuilds/software/*
+!/_RealesedBuilds/game/.gitkeep
+!/_RealesedBuilds/software/.gitkeep

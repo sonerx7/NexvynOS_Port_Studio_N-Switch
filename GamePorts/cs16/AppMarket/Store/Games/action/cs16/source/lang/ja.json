@@ -1,0 +1,10 @@
+{
+  "app.title": "カウンターストライク 1.6",
+  "btn.browse": "ゲームフォルダを選択",
+  "btn.verify": "ファイルを検証",
+  "status.ready": "検証完了",
+  "lbl.no_dir": "フォルダが未選択です。CS 1.6のフォルダを選択してください。",
+  "sec.game_path": "ゲームインストールとファイル検証",
+  "status.engine_missing": "ランチャーのプレビューです。Xash3D ゲームエンジンは含まれていません。",
+  "status.data_missing": "未検出または無効"
+}

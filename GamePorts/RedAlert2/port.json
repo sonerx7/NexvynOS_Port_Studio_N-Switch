@@ -1,0 +1,106 @@
+{
+  "slug": "redalert2",
+  "storeCategory": "strategy",
+  "publicFiles": [
+    "app.json",
+    "ra2.nxvmod",
+    "icon.png",
+    "LICENSE",
+    "NOTICE.md",
+    "assets/logo.nximg",
+    "lang/de.json",
+    "lang/en.json",
+    "lang/es.json",
+    "lang/fr.json",
+    "lang/ja.json",
+    "lang/ko.json",
+    "lang/tr.json",
+    "lang/zh.json"
+  ],
+  "localData": [
+    {
+      "from": "assets/RA2.CSF",
+      "to": "assets/RA2.CSF"
+    },
+    {
+      "from": "game/gamemd.exe",
+      "to": "game/gamemd.exe"
+    },
+    {
+      "from": "game/Binkw32.dll",
+      "to": "game/Binkw32.dll"
+    },
+    {
+      "from": "game/Blowfish.dll",
+      "to": "game/Blowfish.dll"
+    },
+    {
+      "from": "game/ra2.mix",
+      "to": "game/ra2.mix"
+    },
+    {
+      "from": "game/ra2md.mix",
+      "to": "game/ra2md.mix"
+    },
+    {
+      "from": "game/langmd.mix",
+      "to": "game/langmd.mix"
+    },
+    {
+      "from": "game/language.mix",
+      "to": "game/language.mix"
+    },
+    {
+      "from": "game/theme.mix",
+      "to": "game/theme.mix"
+    },
+    {
+      "from": "game/thememd.mix",
+      "to": "game/thememd.mix"
+    },
+    {
+      "from": "game/multi.mix",
+      "to": "game/multi.mix"
+    },
+    {
+      "from": "game/multimd.mix",
+      "to": "game/multimd.mix"
+    },
+    {
+      "from": "game/expandmd01.mix",
+      "to": "game/expandmd01.mix"
+    },
+    {
+      "from": "game/maps01.mix",
+      "to": "game/maps01.mix"
+    },
+    {
+      "from": "game/maps02.mix",
+      "to": "game/maps02.mix"
+    },
+    {
+      "from": "game/mapsmd03.mix",
+      "to": "game/mapsmd03.mix"
+    },
+    {
+      "from": "game/movmd03.mix",
+      "to": "game/movmd03.mix"
+    },
+    {
+      "from": "game/movies01.mix",
+      "to": "game/movies01.mix"
+    },
+    {
+      "from": "game/movies02.mix",
+      "to": "game/movies02.mix"
+    },
+    {
+      "from": "game/ra2.ini",
+      "to": "game/ra2.ini"
+    },
+    {
+      "from": "game/ra2md.ini",
+      "to": "game/ra2md.ini"
+    }
+  ]
+}

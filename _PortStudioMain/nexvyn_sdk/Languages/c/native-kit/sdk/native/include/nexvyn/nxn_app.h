@@ -1,0 +1,182 @@
+/* Nexvyn Native SDK - lifecycle, capabilities, system info and the return to Nexvyn OS.
+ *
+ * The app is a .nxvmod that Nexvyn OS loads into its own process and runs in a window or full screen (app.json "mode":
+ * "window" / "fullscreen"; NXN_CAP_WINDOWED, NATIVE_KIT.md 3.2). Nexvyn OS implements these calls; the app
+ * does not call nxn_init itself in that case (it is already done when main starts).
+ * The same library also builds a stand-alone .nro (the retired exclusive mode, kept only for packages built earlier):
+ * nxn_init then reads the hand-off file (--nxn-handoff=<file>: paths, user, language, theme, where to return) and the
+ * return record tells Nexvyn OS how the app ended. Started without Nexvyn OS (from the Homebrew menu), the same calls
+ * work with standalone defaults and the app returns to whatever started it. */
+#ifndef NEXVYN_NXN_APP_H
+#define NEXVYN_NXN_APP_H
+
+#include "nxn_base.h"
+
+NXN_EXTERN_C_BEGIN
+
+/* ---------------------------------------------------------------- init / shutdown */
+
+enum {
+    NXN_INIT_NO_CRASH_HANDLER = 1u << 0, /* the app installs its own __libnx_exception_handler */
+    NXN_INIT_NO_RETURN = 1u << 1         /* do not start Nexvyn OS again when the app ends */
+};
+
+typedef struct nxn_init_params {
+    uint32_t size;
+    uint32_t flags;               /* NXN_INIT_* */
+    const char* standalone_id;    /* app id used when not started by Nexvyn OS (NULL: the .nro file name) */
+} nxn_init_params;
+
+/* Reads the hand-off, opens the log, marks the launch as running. params may be NULL. Safe to call twice.
+ * Thread: the main thread, once, before any other nxn_* call (inside Nexvyn OS it is already done). Memory: nothing
+ * to free; `params` is only read during the call. */
+NXN_API nxn_result nxn_init(const nxn_init_params* params);
+
+/* Writes the final return record (state "exited"), closes what nxn_* opened. Called by nxn_run and at exit().
+ * Thread: the main thread, after every other app thread was joined. Memory: releases every handle the app left open
+ * (display, audio streams); pointers returned by nxn_info_string become invalid. */
+NXN_API void nxn_shutdown(void);
+
+/* Recommended entry: nxn_init, then entry(argc, argv) inside a crash guard, then nxn_shutdown.
+ * A CPU fault on the main thread inside entry is recorded and the app returns to Nexvyn OS with
+ * NXN_EXIT_CRASHED instead of taking the console down.
+ *     int main(int argc, char** argv) { return nxn_run(argc, argv, app_main, NULL); }
+ * Thread: the main thread; `entry` runs on the calling thread. Memory: argv is owned by the caller. */
+typedef int (*nxn_entry_fn)(int argc, char** argv);
+NXN_API int nxn_run(int argc, char** argv, nxn_entry_fn entry, const nxn_init_params* params);
+
+#define NXN_EXIT_CRASHED 0x6E786E00 /* exit code of a run that ended in a recorded crash */
+
+/* True once the app should end: the system asked to close it, nxn_request_return was called, or a worker
+ * thread crashed. Call it once per frame (it also processes applet messages when the app has no SDL window).
+ * Thread: any app thread (the main thread's calls also count as "alive" for the not-responding check). Memory: none. */
+NXN_API int nxn_should_quit(void);
+
+/* ---------------------------------------------------------------- return to Nexvyn OS */
+
+typedef enum nxn_return_reason {
+    NXN_RETURN_NORMAL = 0, /* finished */
+    NXN_RETURN_USER = 1,   /* the user chose to go back to Nexvyn OS */
+    NXN_RETURN_ERROR = 2,  /* the app could not continue; message is shown by Nexvyn OS */
+    NXN_RETURN_CRASH = 3   /* set by the library only */
+} nxn_return_reason;
+
+/* Records why the app ends and makes nxn_should_quit() true. message (optional, <= 200 bytes UTF-8) is shown by
+ * Nexvyn OS for NXN_RETURN_ERROR. The app then leaves its main loop and returns from its entry function.
+ * Thread: any app thread. Memory: `message` is copied; it may be freed after the call. */
+NXN_API void nxn_request_return(nxn_return_reason reason, int32_t code, const char* message);
+
+/* ---------------------------------------------------------------- capabilities */
+
+/* Capability bits of nxn_caps.features. Macros of type uint64_t, not enum constants: bit 31 and up do not fit the int
+ * range an enum constant has in C11 (ABI v1 keeps the values; only the spelling changed from an anonymous enum). */
+#define NXN_CAP_HOSTED (UINT64_C(1) << 0)        /* started by Nexvyn OS (hand-off read) */
+#define NXN_CAP_RETURN (UINT64_C(1) << 1)        /* ending the app starts Nexvyn OS again */
+#define NXN_CAP_CRASH_GUARD (UINT64_C(1) << 2)   /* CPU faults are recorded and returned (crash handler installed) */
+#define NXN_CAP_GL_CORE (UINT64_C(1) << 3)       /* desktop OpenGL core profile (up to gl_max_major.gl_max_minor) */
+#define NXN_CAP_GLES (UINT64_C(1) << 4)          /* OpenGL ES (up to gles_max_major.gles_max_minor) */
+#define NXN_CAP_AUDIO (UINT64_C(1) << 5)
+#define NXN_CAP_TOUCH (UINT64_C(1) << 6)
+#define NXN_CAP_KEYBOARD (UINT64_C(1) << 7)      /* USB keyboard state */
+#define NXN_CAP_APPLET_MODE (UINT64_C(1) << 8)   /* running as a library applet (less memory; see the porting guide) */
+#define NXN_CAP_EVENTS (UINT64_C(1) << 9)        /* nxn_event_poll (NXN_EVENT_RESIZE) and nxn_display_resize */
+#define NXN_CAP_SHARED_LIBS (UINT64_C(1) << 10)  /* nxn_lib_open can load .nxvlib libraries (JIT code memory is available) */
+/* NXN_CAP_WINDOWED: the app runs inside Nexvyn OS, in a window or full screen (a .nxvmod in the OS's process); without
+ * it the app is a stand-alone .nro */
+#define NXN_CAP_WINDOWED (UINT64_C(1) << 11)
+#define NXN_CAP_AUDIO_CLEAR (UINT64_C(1) << 12)  /* nxn_audio_clear (Native 1.1) */
+#define NXN_CAP_USB_INPUT (UINT64_C(1) << 13)    /* nxn_input_mouse, nxn_input_key_poll, nxn_input_text (Native 1.1) */
+#define NXN_CAP_POWER_EVENTS (UINT64_C(1) << 14) /* NXN_EVENT_DOCK / SUSPEND / RESUME (Native 1.1) */
+/* system services (nxn_sys.h, Native 1.1); windowed mode only, the stand-alone library answers NXN_ERR_UNSUPPORTED */
+#define NXN_CAP_NOTIFY (UINT64_C(1) << 15)       /* nxn_notify */
+#define NXN_CAP_CLIPBOARD (UINT64_C(1) << 16)    /* nxn_clipboard_get / nxn_clipboard_set */
+#define NXN_CAP_RUMBLE (UINT64_C(1) << 17)       /* nxn_rumble */
+#define NXN_CAP_PICKER (UINT64_C(1) << 18)       /* nxn_pick, nxn_grant_* (file / folder dialogs, folder access that is kept) */
+#define NXN_CAP_SAVEDATA (UINT64_C(1) << 19)     /* nxn_save_* (the user's save folder and its backups) */
+#define NXN_CAP_PERMISSIONS (UINT64_C(1) << 20)  /* nxn_perm_query / nxn_perm_request */
+#define NXN_CAP_UI_TOKENS (UINT64_C(1) << 21)    /* nxn_ui_tokens_get, nxn_ui_font_get, nxn_ui_icon_code, NXN_EVENT_THEME (nxn_ui.h) */
+#define NXN_CAP_TEXT (UINT64_C(1) << 22)         /* nxn_tr, nxn_tr_format: the app's lang/<code>.json (nxn_ui.h) */
+#define NXN_CAP_NEXGFX (UINT64_C(1) << 23)       /* the window's GL context offers what NexGFX needs (OpenGL 4.3 core): ngfx_* (nexgfx_native.h) */
+#define NXN_CAP_MIXER (UINT64_C(1) << 24)        /* nxn_sfx_play, nxn_sfx_stop_all, nxn_tone: the OS sound mixer (nxn_audio.h) */
+#define NXN_CAP_INPUT_ACTIONS (UINT64_C(1) << 25) /* nxn_input_action_buttons: the user's button mapping (nxn_input.h) */
+/* C/C++ runtime in windowed mode (W2a); the stand-alone .nro always had both */
+#define NXN_CAP_TLS (UINT64_C(1) << 26)          /* thread_local / __thread in the module and its libraries (-mtls-dialect=trad) */
+#define NXN_CAP_CXX_EXCEPTIONS (UINT64_C(1) << 27) /* C++ throw / catch across the module and its libraries */
+/* JIT and faults (nxn_jit.h); in a window each behind its own setting, off by default */
+#define NXN_CAP_JIT (UINT64_C(1) << 28)          /* nxn_jit_*: executable code memory (rw + rx views) */
+#define NXN_CAP_FAULT_HANDLER (UINT64_C(1) << 29) /* nxn_fault_handler_set: data aborts go to the app's handler first (fastmem) */
+#define NXN_CAP_GUARD_PAGES (UINT64_C(1) << 30)  /* nxn_mem_guard: inaccessible / read-only pages in the app's own heap */
+/* window menu (nxn_menu.h): the app's menus in the OS menu bar, NXN_EVENT_MENU; setting native.windowMenu, minNative 1.1 */
+#define NXN_CAP_MENU (UINT64_C(1) << 31)
+/* NXN_UI_FONT_CJK (nxn_ui.h) is a font id this system answers; the font itself may still be absent (NXN_ERR_NOT_FOUND) */
+#define NXN_CAP_UI_FONT_CJK (UINT64_C(1) << 32)
+/* Native 1.2: nxn_window_set_title / set_mode / set_modified (nxn_window.h) */
+#define NXN_CAP_WINDOW_CTL (UINT64_C(1) << 33)
+/* Native 1.2: nxn_power_get, NXN_EVENT_POWER (nxn_power.h): battery, charger, dock, network */
+#define NXN_CAP_POWER_STATE (UINT64_C(1) << 34)
+/* Native 1.2: nxn_dialog, nxn_prompt (nxn_dialog.h): the OS alert / question / text prompt */
+#define NXN_CAP_DIALOG (UINT64_C(1) << 35)
+/* nxn_input_text_request: the app can ask for the Nexvyn OS on-screen keyboard (nxn_input.h) */
+#define NXN_CAP_TEXT_REQUEST (UINT64_C(1) << 36)
+/* Native 1.2 add-on: nxn_input_relative_mouse / nxn_input_mouse_delta and nxn_input_pad_count / nxn_input_pad_poll (nxn_input.h) */
+#define NXN_CAP_INPUT_ROUTER (UINT64_C(1) << 37)
+/* nxn_stream_* through the system's shared block cache (nxn_stream.h) */
+#define NXN_CAP_STREAM (UINT64_C(1) << 38)
+/* nxn_phys_* inside Nexvyn OS: 3D collision worlds, queries, character controllers, triggers (nxn_phys.h) */
+#define NXN_CAP_PHYS (UINT64_C(1) << 39)
+/* nxn_nav_* inside Nexvyn OS: walkable grid bake, A* paths, blockers, walking agents (nxn_nav.h) */
+#define NXN_CAP_NAV (UINT64_C(1) << 40)
+
+typedef struct nxn_caps {
+    uint32_t size;
+    uint32_t abi_gen;          /* NXN_ABI_GEN of the library */
+    uint16_t version_major;    /* Native SDK version of the library */
+    uint16_t version_minor;
+    uint64_t features;         /* NXN_CAP_* */
+    uint16_t gl_max_major, gl_max_minor;
+    uint16_t gles_max_major, gles_max_minor;
+} nxn_caps;
+
+/* Fills min(out->size, sizeof(nxn_caps)) bytes. out->size must be set (NXN_STRUCT_INIT).
+ * NXN_OK, or NXN_ERR_INVALID for NULL or a size smaller than the size field.
+ * Features and GL ceilings are runtime advertisements, not hardware verification.
+ * Thread: any thread (it needs no app state). Memory: written into the caller's struct. */
+NXN_API nxn_result nxn_caps_get(nxn_caps* out);
+
+/* ---------------------------------------------------------------- system / user info */
+
+typedef struct nxn_info {
+    uint32_t size;
+    uint32_t hosted;           /* 1 when started by Nexvyn OS */
+    uint32_t theme_dark;       /* 1 dark appearance, 0 light */
+    uint32_t accent_rgb;       /* 0xRRGGBB, the user's accent colour */
+    uint64_t confirm_buttons;  /* NXN_BTN_* mask the user confirms with (Nexvyn OS's mapping) */
+    uint64_t cancel_buttons;   /* NXN_BTN_* mask the user goes back with */
+} nxn_info;
+
+/* Thread: any app thread. Memory: written into the caller's struct. */
+NXN_API nxn_result nxn_info_get(nxn_info* out);
+
+typedef enum nxn_info_key {
+    NXN_INFO_APP_ID = 0,
+    NXN_INFO_APP_VERSION = 1,
+    NXN_INFO_OS_VERSION = 2,      /* "" when standalone */
+    NXN_INFO_SDK_VERSION = 3,     /* script SDK of the system, "" when standalone */
+    NXN_INFO_NATIVE_VERSION = 4,  /* Native SDK version of the system ("1.2"), "" when standalone */
+    NXN_INFO_LANGUAGE = 5,        /* "en", "tr", ... (the system language when standalone) */
+    NXN_INFO_USER_NAME = 6,
+    NXN_INFO_THEME = 7            /* "dark" / "light" */
+} nxn_info_key;
+
+/* Never NULL: "" for an unknown key or value. The string lives until nxn_shutdown.
+ * Thread: any app thread. Memory: owned by the library, read-only, never freed by the caller. */
+NXN_API const char* nxn_info_string(nxn_info_key key);
+
+/* Text of the last NXN_ERR_SYSTEM / NXN_ERR_IO on this thread ("" if none).
+ * Thread: any app thread; the text is per thread (another thread's failure never shows here). Memory: owned by the
+ * library; the pointer stays valid until the next failing nxn_* call on the same thread; never freed by the caller. */
+NXN_API const char* nxn_last_error(void);
+
+NXN_EXTERN_C_END
+
+#endif /* NEXVYN_NXN_APP_H */

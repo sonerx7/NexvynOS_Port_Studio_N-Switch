@@ -1,0 +1,10 @@
+{
+  "app.title": "Counter-Strike 1.6",
+  "btn.browse": "Seleccionar Carpeta",
+  "btn.verify": "Verificar Archivos",
+  "status.ready": "Archivos Verificados",
+  "lbl.no_dir": "No se ha seleccionado carpeta. Elige la carpeta de CS 1.6.",
+  "sec.game_path": "Instalación y Verificación de Archivos",
+  "status.engine_missing": "Vista previa del lanzador. El motor Xash3D no está incluido.",
+  "status.data_missing": "Falta o no es válido"
+}

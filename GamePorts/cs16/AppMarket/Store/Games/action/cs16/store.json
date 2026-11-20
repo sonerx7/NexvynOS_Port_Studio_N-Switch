@@ -1,0 +1,59 @@
+{
+  "kind": "port",
+  "category": "action",
+  "features": [
+    "offline",
+    "controller",
+    "touch",
+    "keyboard"
+  ],
+  "tags": [
+    "action",
+    "fps",
+    "counter-strike",
+    "shooter",
+    "valve"
+  ],
+  "players": "1-32",
+  "age": "teen",
+  "subtitle": {
+    "en": "Tactical FPS for Nexvyn OS",
+    "tr": "Nexvyn OS için Taktiksel FPS",
+    "de": "Taktischer Ego-Shooter für Nexvyn OS",
+    "es": "Shooter táctico para Nexvyn OS",
+    "fr": "Jeu de tir tactique pour Nexvyn OS",
+    "ja": "Nexvyn OS向けタクティカルFPS",
+    "ko": "Nexvyn OS용 택티컬 FPS 게임",
+    "zh": "适用于 Nexvyn OS 的战术射击游戏"
+  },
+  "description": {
+    "en": "Counter-Strike 1.6 launcher preview and game-data validator for Nexvyn OS.",
+    "tr": "Nexvyn OS için Counter-Strike 1.6 başlatıcı önizlemesi ve oyun dosyası doğrulayıcısı.",
+    "de": "Counter-Strike-1.6-Launcher-Vorschau und Datenprüfung für Nexvyn OS.",
+    "es": "Vista previa del lanzador y verificador de datos de Counter-Strike 1.6 para Nexvyn OS.",
+    "fr": "Aperçu du lanceur et vérification des données de Counter-Strike 1.6 pour Nexvyn OS.",
+    "ja": "Nexvyn OS 向け Counter-Strike 1.6 ランチャーのプレビューとゲームデータの検証。",
+    "ko": "Nexvyn OS용 카운터 스트라이크 1.6 런처 미리 보기와 게임 데이터 검증 도구입니다.",
+    "zh": "适用于 Nexvyn OS 的反恐精英 1.6 启动器预览和游戏数据验证工具。"
+  },
+  "shots": [
+    [
+      "wait 2"
+    ],
+    [
+      "wclick 0.5 0.5",
+      "wait 2"
+    ],
+    [
+      "wclick 0.2 0.3",
+      "wait 1"
+    ],
+    [
+      "key escape",
+      "wait 1"
+    ],
+    [
+      "wait 1"
+    ]
+  ]
+}
