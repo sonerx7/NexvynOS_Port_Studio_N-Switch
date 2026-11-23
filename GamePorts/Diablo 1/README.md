@@ -1,29 +1,29 @@
 # Diablo 1 Port - Nexvyn Port Studio
 
-Bu proje, Blizzard'ın efsanevi aksiyon RPG'si **Diablo 1** (ve genişleme paketi Hellfire) oyununun Nintendo Switch ve modern gömülü platformlara taşınması projesidir.
+This project ports Blizzard's legendary action RPG **Diablo 1** (and its Hellfire expansion) to the Nintendo Switch and modern embedded platforms.
 
 ---
 
-## 🎯 Port Yaklaşımı & Motor Seçimi
+## 🎯 Port Approach & Engine Choice
 
-- **Motor:** **DevilutionX** (Diablo 1'in tersine mühendislikle yeniden yazılmış, orijinal oyun mantığını %100 koruyan açık kaynaklı C++ motoru).
-- **Varlıklar:** Orijinal `DIABDAT.MPQ` dosyası (kullanıcı tarafından sağlanır; shareware/demo `spawn.mpq` desteği ile test edilebilir).
-- **Grafik & Ekran:** 640x480 orijinal çözünürlük yerine Switch'in 720p/1080p ekranına tam uyumlu geniş ekran (Widescreen) ve 60 FPS desteği.
-
----
-
-## 🕹️ Hedef Özellikler
-
-- **Modern Gamepad Kontrolleri:** Doğrudan karakter yönlendirme, analog çubuk ile hedef seçimi, hızlı yetenek atamaları.
-- **Dokunmatik Arayüz:** Envanter yönetimi, büyü kitabı ve eşya kuşanma için tam dokunmatik ekran kullanımı.
-- **Otomatik Altın Toplama & Koşma:** Modern yaşam kalitesi (QoL) iyileştirmeleri.
-- **Çok Oyunculu:** TCP/IP ve ZeroTier entegrasyonu ile yerel ağ veya internet üzerinden co-op zindan keşfi.
+- **Engine:** **DevilutionX** (an open-source C++ engine reverse-engineered from Diablo 1 that preserves the original game logic 100%).
+- **Assets:** The original `DIABDAT.MPQ` file (supplied by the user; can be tested with the shareware/demo `spawn.mpq`).
+- **Graphics & Display:** Widescreen support and 60 FPS fully fitted to the Switch's 720p/1080p screen, instead of the original 640x480 resolution.
 
 ---
 
-## 📁 Dizin Yapısı
+## 🕹️ Target Features
+
+- **Modern Gamepad Controls:** Direct character steering, target selection with the analog stick, quick skill assignments.
+- **Touch Interface:** Full touchscreen use for inventory management, the spell book and equipping items.
+- **Automatic Gold Pickup & Running:** Modern quality-of-life (QoL) improvements.
+- **Multiplayer:** Co-op dungeon exploration over a local network or the internet with TCP/IP and ZeroTier integration.
+
+---
+
+## 📁 Directory Structure
 
 - `docs/`
-  - `ARCHITECTURE.md`: DevilutionX derleme ve libnx entegrasyon detayları.
-- `data/`: `DIABDAT.MPQ` veya `spawn.mpq` dosyalarının yerleşeceği dizin.
-- `saves/`: Karakter ve ilerleme kayıtları.
+  - `ARCHITECTURE.md`: DevilutionX build and libnx integration details.
+- `data/`: Directory where the `DIABDAT.MPQ` or `spawn.mpq` files go.
+- `saves/`: Character and progress saves.

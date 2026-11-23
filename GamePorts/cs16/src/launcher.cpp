@@ -5,6 +5,7 @@
 #include <nexvyn/nexvyn_native.h>
 #include "imgui.h"
 #include <nexvyn/nxn_os_ui.h>
+#include "nx_howto_ui.h" /* shared how-to section; data generated from port.json */
 
 static char game_dir[512];
 static bool cstrike_ready;
@@ -73,4 +74,7 @@ void cs16_draw_launcher(const nxn_ui_tokens& tokens) {
     if (nxn_os_button(nxn_tr("btn.verify"), NXN_OS_BTN_DEFAULT, tokens)) verify();
     nxn_os_row_end();
     nxn_os_card_end();
+    nxn_os_gap(NXN_OS_SP_M);
+    nxn_os_text(NXN_OS_TEXT_HEADER, nxn_tr(NX_HOWTO_TITLE_KEY));
+    nx_howto_draw(tokens);
 }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(cs16 VERSION 1.0.1 LANGUAGES C CXX)
+project(cs16 VERSION 1.0.3 LANGUAGES C CXX)
 
 if(NOT DEFINED NEXVYN_KIT)
   get_filename_component(NEXVYN_KIT "${CMAKE_CURRENT_LIST_DIR}/../../_PortStudioMain/nexvyn_sdk/Languages/c/native-kit/sdk/native" ABSOLUTE)
@@ -18,7 +18,7 @@ if(NOT EXISTS "${GLAD_LIB}")
 endif()
 
 nexvyn_add_windowed(cs16_win NAME cs16 SOURCES src/main.cpp src/launcher.cpp ${IMGUI_SRC} LINK ${GLAD_LIB})
-target_include_directories(cs16_win_objects PRIVATE src ${IMGUI_DIR} ${IMGUI_DIR}/backends
+target_include_directories(cs16_win_objects PRIVATE src generated ${CMAKE_CURRENT_SOURCE_DIR}/../../_PortStudioMain/portkit ${IMGUI_DIR} ${IMGUI_DIR}/backends
                            "$ENV{DEVKITPRO}/portlibs/switch/include" ${NEXVYN_KIT}/include)
 target_compile_definitions(cs16_win_objects PRIVATE IMGUI_DISABLE_DEFAULT_SHELL_FUNCTIONS)
 target_compile_options(cs16_win_objects PRIVATE -Wall -Wextra -Wno-unused-parameter "$<$<COMPILE_LANGUAGE:CXX>:-fno-rtti;-fno-exceptions>")

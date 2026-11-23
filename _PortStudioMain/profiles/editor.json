@@ -1,0 +1,152 @@
+{
+  "schema": 1,
+  "profile": "editor",
+  "description": "Document/3D editor: orbit, pan, zoom, precise pointer.",
+  "input": {
+    "modes": [
+      "auto",
+      "gamepad",
+      "touch",
+      "kbm"
+    ],
+    "defaultMode": "auto",
+    "actions": {
+      "select": {
+        "gamepad": [
+          "a"
+        ],
+        "touch": [
+          "tap"
+        ],
+        "kbm": [
+          "mouse1"
+        ]
+      },
+      "orbit": {
+        "gamepad": [
+          "rstick"
+        ],
+        "touch": [
+          "one_finger_drag"
+        ],
+        "kbm": [
+          "mouse3_drag"
+        ]
+      },
+      "camera_pan": {
+        "gamepad": [
+          "zl+rstick"
+        ],
+        "touch": [
+          "two_finger_pan"
+        ],
+        "kbm": [
+          "shift+mouse3_drag"
+        ]
+      },
+      "camera_zoom": {
+        "gamepad": [
+          "zr"
+        ],
+        "touch": [
+          "pinch"
+        ],
+        "kbm": [
+          "wheel"
+        ]
+      },
+      "cancel": {
+        "gamepad": [
+          "b"
+        ],
+        "touch": [
+          "back_button"
+        ],
+        "kbm": [
+          "escape"
+        ]
+      },
+      "menu": {
+        "gamepad": [
+          "plus"
+        ],
+        "touch": [
+          "menu_button"
+        ],
+        "kbm": [
+          "f10"
+        ]
+      }
+    },
+    "gestures": {
+      "tap": "select",
+      "one_finger_drag": "orbit",
+      "two_finger_pan": "camera_pan"
+    },
+    "gamepad": {
+      "deadzone": 0.15,
+      "sensitivity": 1.0,
+      "invertY": false,
+      "rumble": true
+    },
+    "touch": {
+      "minTargetPx": 44,
+      "multitouch": true
+    },
+    "zoom": {
+      "method": "none",
+      "min": 0.1,
+      "max": 10.0,
+      "step": 0.1,
+      "defaultOn": true
+    }
+  },
+  "performance": {
+    "handheld": {
+      "renderScale": 0.75,
+      "resolution": [
+        1280,
+        720
+      ],
+      "fpsCap": 30,
+      "msaa": 0,
+      "shadows": "low"
+    },
+    "docked": {
+      "renderScale": 1.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "fpsCap": 30,
+      "msaa": 0,
+      "shadows": "medium"
+    },
+    "auto": true
+  },
+  "launcher": {
+    "primaryAction": "play",
+    "sections": [
+      "data",
+      "video",
+      "controls",
+      "help"
+    ],
+    "remember": [
+      "dataPath",
+      "mode",
+      "profile"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "orbit_pan_zoom",
+      "title": "Orbit, pan and zoom the view",
+      "steps": {
+        "gamepad": "Right stick, ZL + right stick, ZR",
+        "touch": "One finger, two fingers, pinch",
+        "kbm": "Middle drag, Shift + middle drag, wheel"
+      }
+    }
+  ]
+}

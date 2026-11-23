@@ -1,0 +1,50 @@
+{
+  "id": "org.chromium.nx",
+  "name": {
+    "en": "Chromium NX",
+    "tr": "Chromium NX",
+    "de": "Chromium NX",
+    "es": "Chromium NX",
+    "fr": "Chromium NX",
+    "ja": "Chromium NX",
+    "ko": "Chromium NX",
+    "zh": "Chromium NX"
+  },
+  "description": {
+    "en": "Chromium web browser for Nintendo Switch running under Linux Kernel Library (LKL). Direct browser startup with no intermediate launcher.",
+    "tr": "Linux Kernel Library (LKL) üzerinde çalışan Nintendo Switch için Chromium web tarayıcısı. Ara başlatıcı olmadan doğrudan tarayıcı açılışı.",
+    "de": "Chromium-Webbrowser für Nintendo Switch auf Basis der Linux Kernel Library (LKL). Direktstart ohne Launcher.",
+    "es": "Navegador web Chromium para Nintendo Switch sobre Linux Kernel Library (LKL). Inicio directo sin lanzador.",
+    "fr": "Navigateur web Chromium pour Nintendo Switch basé sur Linux Kernel Library (LKL). Démarrage direct sans lanceur.",
+    "ja": "Linux Kernel Library（LKL）上で動作するNintendo Switch用Chromiumウェブブラウザ。ランチャーなしのダイレクト起動。",
+    "ko": "Linux Kernel Library(LKL) 기반 Nintendo Switch용 Chromium 웹 브라우저. 런처 없는 다이렉트 실행 지원.",
+    "zh": "基于 Linux Kernel Library (LKL) 的任天堂 Switch 版 Chromium 网页浏览器，支持跳过启动器直接运行。"
+  },
+  "version": "0.2.0",
+  "build": 1,
+  "type": "app",
+  "author": "shodowlo, Chromium Authors, Port by sonerx7",
+  "license": "GPL-2.0-only",
+  "category": "utilities",
+  "runtime": "native",
+  "main": "chromium-nx.nxvmod",
+  "icon": "icon.png",
+  "mode": "window",
+  "window": {
+    "width": 1280,
+    "height": 720,
+    "resizable": true
+  },
+  "liveResize": true,
+  "gamepad": true,
+  "loadingHint": true,
+  "permissions": [
+    "network",
+    "files"
+  ],
+  "minSdk": "1.15",
+  "targetSdk": "1.15",
+  "minNative": "1.2",
+  "targetNative": "1.2",
+  "minOs": "1.3.26"
+}

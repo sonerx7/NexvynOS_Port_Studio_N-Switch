@@ -1,17 +1,17 @@
-# Port Market bilinen sorunlar
+# Port Market known issues
 
 ## 0.2.1
 
-- Internet Archive öğelerinde ilk 500 dosya kaydı okunur. Cihazdaki canlı indirme ve kurulum kabul testi bekliyor.
+- For Internet Archive items, the first 500 file records are read. The live download and install acceptance test on the device is pending.
 
 ## 0.2.0
 
-- Seçilen Internet Archive öğelerinde ilk 500 dosya kaydı okunur. Yükleme işlenirken dosya hemen görünmeyebilir.
-- İndirilen dosyanın byte sayısı kontrol edilir. Internet Archive SHA-1 değeri önbellek kimliğinde kullanılır. Nexvyn OS, paketi açarken iç manifesti denetler.
-- SDK ve masaüstü denetimi cihazda gerçek ağ/kurulum akışının kanıtı değildir.
+- For selected Internet Archive items, the first 500 file records are read. A file may not appear immediately while an upload is being processed.
+- The byte count of the downloaded file is checked. The Internet Archive SHA-1 value is used in the cache identifier. Nexvyn OS checks the inner manifest when unpacking the package.
+- The SDK and desktop checks are not proof of the real network/install flow on the device.
 
 ## 0.1.0
 
-- Paketin yolu veya indirme adresi panoya aktarılır. İnceleme ve kurulum için Nexvyn OS Dosyalar uygulaması kullanılır.
-- Uygulama yerel dosyanın boyutunu kontrol eder. SHA-256 değeri de katalogda gösterilebilir; tam dosya doğrulaması katalog üretilirken masaüstünde yapılır.
-- SDK derlemesi ve statik denetimler cihazdaki ekran düzeni veya kurulum akışı için kanıt sayılmaz.
+- The package path or download address is copied to the clipboard. Use the Nexvyn OS Files app for inspection and installation.
+- The app checks the size of the local file. The SHA-256 value can also be shown in the catalog; full file verification is done on the desktop when the catalog is generated.
+- The SDK build and static checks do not count as proof of the on-device screen layout or install flow.

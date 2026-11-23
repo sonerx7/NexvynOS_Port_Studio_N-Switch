@@ -1,5 +1,5 @@
-# Bilinen sorunlar
+# Known issues
 
-## Yayınlanmamış
+## Unreleased
 
-<!-- Her sürümde test ortamı, sorun, etkisi ve varsa geçici çözüm yaz. -->
+<!-- Record the tested environment, effect, and any workaround in each version section. -->

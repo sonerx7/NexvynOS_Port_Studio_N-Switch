@@ -1,0 +1,6 @@
+{
+  "app_name": "Chromium NX",
+  "desc": "Chromium Webbrowser auf Nintendo Switch über Linux Kernel Library (LKL). Direktstart.",
+  "loading": "Chromium wird gestartet...",
+  "quit": "Beenden"
+}

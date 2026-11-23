@@ -1,25 +1,19 @@
-# Counter-Strike 1.6 Launcher Preview for Nexvyn OS
+# Counter-Strike 1.6 launcher preview for Nexvyn OS
 
-## What it does
-Counter-Strike 1.6 launcher preview and game-data validator for Nexvyn OS, built as an integrated native AArch64 module (`cs16.nxvmod`). It checks your selected Counter-Strike 1.6 installation folder and verifies the required WAD headers (`cstrike/cstrike.wad` and `valve/halflife.wad`). The Xash3D FWGS game engine is not yet bundled in this preview release.
+Version 1.0.1 is a native launcher preview that checks original Counter-Strike 1.6 data. Gameplay, bot matches, and LAN play require the pending Xash3D FWGS and CS16Client integration. The preview targets Nexvyn OS 1.3.28-beta.2 with SDK 1.15 and Native ABI 1.
 
-## Setup and supported data versions
-Proprietary game assets (maps, models, sounds, textures) are NOT included in the store package.
-Supported data versions:
-- Counter-Strike 1.6 (Retail / Steam / Build 8684 or compatible)
-- Required game directories: `cstrike/` and `valve/` containing valid `WAD2`/`WAD3` files (`cstrike.wad`, `halflife.wad`).
+## Check your game files
 
-Use the folder picker in the launcher to select your Counter-Strike 1.6 folder on the SD card, or bundle your files into a personal test package.
+Use **Select Game Folder** to choose the directory on your SD card containing `cstrike/` and `valve/`. The launcher remembers the selection when it can save the path and retain the folder grant. It uses valid bundled data first when you supply your own files in a personal test package.
 
-## Controls and display modes
-- **Windowed & Live Resize**: 1280x720 default window with live resize support.
-- **Navigation**: Gamepad, touch and mouse/keyboard support in the native Nexvyn OS UI.
+The launcher checks the `WAD2` or `WAD3` signatures in `cstrike/cstrike.wad` and `valve/halflife.wad`. A passed check applies to those headers. Compatibility with specific retail and Steam builds, including Build 8684, remains unverified. Supply the original game files from your own installation.
 
-## Version, requirements and known issues
-- Version 1.0.1
-- Target Nexvyn OS: 1.3.28-beta.2+ / SDK 1.15 / Native ABI 1
-- Known issue: Launcher preview only; Xash3D FWGS engine integration is pending.
+## Launcher controls and display
+
+The preview uses Nexvyn OS navigation for gamepad, touch, and keyboard/mouse input. It opens in a resizable 1280 × 720 window by default. It uses the Nexvyn OS language at launch, with English as the fallback. The package includes English, Turkish, German, Spanish, French, Japanese, Korean, and Chinese locale files. Input, resize, and locale rendering still need device or emulator verification.
 
 ## Licenses and credits
+
 - Original game by Valve Corporation.
-- Nexvyn OS Native Launcher and data validator by sonerx7 (GPL-3.0).
+- Native launcher and file checker by sonerx7 under GPL-3.0. [License](source/LICENSE) · [Source notice](source/NOTICE.md)
+- Dear ImGui is distributed under the MIT license. [Dear ImGui license](source/LICENSE-IMGUI.txt)

@@ -1,13 +1,13 @@
-# Gelecek Yazılım Portu Şablonu (SoftwarePorts/XX)
+# Future Software Port Template (SoftwarePorts/XX)
 
-Bu klasör, Nexvyn Port Studio bünyesine eklenecek yeni PC yazılımları, üretkenlik araçları veya emülatörler için standart şablon alanıdır.
+This folder is the standard template area for new PC software, productivity tools or emulators to be added to Nexvyn Port Studio.
 
 ---
 
-## 🚀 Yeni Bir Yazılım Portu Başlatırken İzlenecek Adımlar:
+## 🚀 Steps When Starting a New Software Port:
 
-1. Bu klasörü çoğaltın ve hedef yazılımın adını verin (örn. `SoftwarePorts/DosBox-X`).
-2. `docs/ARCHITECTURE.md` oluşturarak bellek, ekran, mimari kısıtlarını tanımlayın.
-3. `_PortStudioMain/sdk/include/nexvyn_port_core.h` kütüphanesini dahil ederek sanal fare ve ekran ölçekleyiciyi bağlayın.
-4. Yazılımın bağımsız kaynak kodlarını `src/` altına yerleştirin.
-5. Varsa başlatıcı veya yapılandırma dosyalarını `config/` altına ekleyin.
+1. Duplicate this folder and name it after the target software (e.g. `SoftwarePorts/DosBox-X`).
+2. Create `docs/ARCHITECTURE.md` and define the memory, display and architecture constraints.
+3. Include the `_PortStudioMain/sdk/include/nexvyn_port_core.h` library and hook up the virtual mouse and display scaler.
+4. Place the software's standalone source code under `src/`.
+5. If present, add launcher or configuration files under `config/`.

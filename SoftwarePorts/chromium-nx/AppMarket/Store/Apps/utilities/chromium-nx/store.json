@@ -1,0 +1,36 @@
+{
+  "kind": "port",
+  "subtitle": {
+    "en": "Chromium Web Browser for Nintendo Switch",
+    "tr": "Nintendo Switch için Chromium Web Tarayıcısı",
+    "de": "Chromium Webbrowser für Nintendo Switch",
+    "es": "Navegador Web Chromium para Nintendo Switch",
+    "fr": "Navigateur Web Chromium pour Nintendo Switch",
+    "ja": "Nintendo Switch用Chromiumウェブブラウザ",
+    "ko": "Nintendo Switch용 Chromium 웹 브라우저",
+    "zh": "任天堂 Switch 版 Chromium 网页浏览器"
+  },
+  "description": {
+    "en": "Full Chromium 156 web browser running via Linux Kernel Library (LKL). Direct startup into browser mode without launcher.",
+    "tr": "Linux Kernel Library (LKL) üzerinden çalışan tam Chromium 156 web tarayıcısı. Başlatıcı olmadan doğrudan tarayıcı açılışı.",
+    "de": "Vollwertiger Chromium 156 Webbrowser auf Basis der Linux Kernel Library (LKL). Direktstart in den Browsermodus ohne Launcher.",
+    "es": "Navegador web Chromium 156 completo que se ejecuta mediante Linux Kernel Library (LKL). Inicio directo en modo navegador sin lanzador.",
+    "fr": "Navigateur web complet Chromium 156 fonctionnant via Linux Kernel Library (LKL). Démarrage direct en mode navigateur sans lanceur.",
+    "ja": "Linux Kernel Library (LKL) 経由で動作する完全な Chromium 156 ウェブブラウザ。ランチャーなしで直接ブラウザを起動。",
+    "ko": "Linux Kernel Library(LKL)를 통해 실행되는 풀 Chromium 156 웹 브라우저. 런처 없이 브라우저 모드로 즉시 실행.",
+    "zh": "通过 Linux Kernel Library (LKL) 运行的完整 Chromium 156 网页浏览器。无需启动器直接进入浏览器模式。"
+  },
+  "features": [
+    "touch",
+    "gamepad",
+    "keyboard",
+    "network"
+  ],
+  "tags": [
+    "browser",
+    "internet",
+    "chromium",
+    "web"
+  ],
+  "age": "everyone"
+}

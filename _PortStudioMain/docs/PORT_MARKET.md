@@ -1,31 +1,33 @@
 # Port Market 0.2.1 beta
 
-Port Market, seçtiğin Internet Archive öğelerini açılışta ve açıkken beş dakikada bir kontrol eder. Öğenin ayrıntı adresini veya kimliğini **Arşiv öğesi ekle** düğmesiyle bir kez kaydet. Yeni `.nxvapp` dosyaları en yeni yükleme önce sıralanır. **İndir** düğmesi SDK üzerinden ilerlemeyi gösterir ve doğru boyutta tamamlanan dosyayı uygulamanın özel alanına alır. **Kurulum ekranını aç**, Nexvyn OS paket incelemesine geçer. Takip listesi ve indirmeler cihazdaki kullanıcı profiline aittir.
+Port Market checks selected Internet Archive items on startup and every five minutes while open. Save an item URL or identifier using **Add archive item**. Newly uploaded `.nxvapp` files appear first. **Download** shows progress and moves the completed file into the app’s private area after checking its size. **Open installer** opens the Nexvyn OS package review. Each device profile owns its watch list and downloads.
 
-**Yerel** sekmesi ayrıca SD karttaki kişisel stüdyo kataloğunu (`game/<port>/` ve `software/<port>/` alt klasörleriyle birlikte) açabilir:
+## Personal SD catalog
 
-```powershell
-python _PortStudioMain/tools/port_market.py catalog
-```
-
-Üretilen `_RealesedBuilds/port-market.tsv` ve yanındaki `game/`, `software/` klasörlerini aynı dizin yapısıyla SD karta kopyala. Uygulamadan üst klasörü seç. Beta paketi herhangi bir kişisel katalog, oyun dosyası veya hesap bilgisi taşımaz. Game ve software paketlerinin yanı sıra arşiv hazırlığı da `_RealesedBuilds/` altında Git dışında tutulur.
-
-## Internet Archive hazırlığı
-
-Dağıtım hakkı kayıtlı bir portun paketini oluştur, sonra sürümün arşiv dosyalarını hazırla. Portu ve beraberindeki bütün veriyi dağıtabilme hakkı kayda geçtiyse `port.json` içinde `archiveFullData: true` kullan ve `--full-package` ekle. Bu çağrı ilgili kişisel sürüm paketini alır.
+The Local tab opens a personal Studio catalog including packages under `game/<port>/` and `software/<port>/`.
 
 ```powershell
-python _PortStudioMain/tools/port_market.py prepare-archive "GamePorts/ornek" --item "ornek-nexvyn-port" --license MIT --output "_RealesedBuilds/archive/ornek"
+python -X utf8 _PortStudioMain/tools/port_market.py catalog
 ```
 
-Hazırlık komutu paket içeriğini onaylı `source/` ve varsa yerel veri eşlemesiyle karşılaştırır. Arşiv dizinine sürüm etiketli paketi, yükleme metadatasını ve dağıtım kaydını üretir. Aynı Internet Archive öğesine sonraki sürümü yeni dosya adıyla yüklediğinde Port Market bunu kendiliğinden görür. Arşiv öğesine erişim Internet Archive ayrıntı sayfasındaki erişim koşullarına bağlıdır.
+Copy `_RealesedBuilds/port-market.tsv` and the adjacent `game/` and `software/` folders to the SD card, preserving their layout. Choose their parent directory in the app. The beta package ships without personal files. Keep local builds, catalogs, and archive candidates under the ignored `_RealesedBuilds/` directory.
 
-SDK tek `.nxvapp` için açılmış içerikte 1 GiB (`1.073.741.824` byte) sınırı uygular. Red Alert 2’nin kişisel kurulumu için `port.json` içindeki `localData` listesi, motorun çalıştığı temel `.mix` arşivlerini, `gamemd.exe` ve `RA2.CSF` dosyalarını (~833 MiB veri + ~160 MiB modül = ~947 MiB açılmış boyut < 1 GiB) seçerek `_RealesedBuilds/game/redalert2/` altında geçerli tek dosya `.nxvapp` (~503,5 MiB) üretir.
+## Prepare an Internet Archive release
 
-## Yerel beta paketi
+Follow the [release workflow](RELEASE_WORKFLOW.md) and record redistribution rights for the current manifest version. Set `release.status` to `ready` and `release.version` to the reviewed version. To distribute a full personal package, record clearance for all included data, set `archiveFullData: true`, and pass `--full-package`.
 
 ```powershell
-python _PortStudioMain/tools/build_port_market_beta.py --checkout "../Nexvyn-OS-NX" --checker-checkout "../SnxOS-NX" --install-local
+python -X utf8 _PortStudioMain/tools/port_market.py prepare-archive "GamePorts/my-game" --item "my-nexvyn-port" --license MIT --output "_RealesedBuilds/archive/my-game"
 ```
 
-Resmî mağaza aracı Port Market kaydını üretir. `--install-local` yerel Nexvyn OS checkout’undaki beta girdisini günceller. Oluşan paket ayrıca uygulamanın `build/beta-0.2.1/` klasöründe bulunur.
+The command uses the port’s locked SDK, checks package contents against the current `source/` and declared data paths, and writes the versioned package, upload metadata, and distribution record. Use `--sdk` to select a matching SDK snapshot explicitly. Port Market detects a later version uploaded with a new file name to the same Archive item. Access is governed by the item’s settings.
+
+The OS limits a single package to 1 GiB unpacked. Use explicit data mappings such as the [Red Alert 2 personal package configuration](../../GamePorts/RedAlert2/port.json) to include just the needed files.
+
+## Build the local beta
+
+```powershell
+python -X utf8 _PortStudioMain/tools/build_port_market_beta.py --checkout "../Nexvyn-OS-NX" --checker-checkout "../SnxOS-NX" --install-local
+```
+
+The official store tool builds the Port Market listing. `--install-local` updates the local Nexvyn OS checkout. The package is also written to Port Market’s `build/beta-0.2.1/` directory.

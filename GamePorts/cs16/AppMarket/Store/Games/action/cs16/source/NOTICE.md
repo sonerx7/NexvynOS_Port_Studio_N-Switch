@@ -1,11 +1,8 @@
-# Counter-Strike 1.6 Native Port for Nexvyn OS
+# Counter-Strike 1.6 launcher preview for Nexvyn OS
 
-## Upstream & Credits
-- **Counter-Strike**: Original game created by Minh Le ("Gooseman") and Jess Cliffe. Developed and published by Valve Corporation.
-- **Xash3D FWGS Engine**: Developed by Flying With GAUS (FWGS) under GPL v3.
-- **CS16Client**: Open-source client implementation for Counter-Strike 1.6 under GPL v3.
-- **Nexvyn OS Port & Launcher**: Developed by sonerx7 using Nexvyn OS Native Kit & Dear ImGui.
+- Counter-Strike was created by Minh Le and Jess Cliffe and developed and published by Valve Corporation.
+- The Nexvyn OS launcher and WAD validator are distributed under GPL-3.0. The corresponding source and build instructions are in the Nexvyn Port Studio repository under `GamePorts/cs16`.
+- Dear ImGui is included under the MIT license. See [LICENSE-IMGUI.txt](LICENSE-IMGUI.txt).
+- Xash3D FWGS and CS16Client are candidates for a future engine integration. The preview contains the launcher and data validator.
 
-## Data Notice
-This package does NOT contain any proprietary game assets, maps, textures, sounds, or models.
-Users must supply their own legitimate Counter-Strike 1.6 game files (`cstrike` and `valve` directories) to play.
+The base bundle contains no original maps, textures, sounds, or models. Users can select their own legitimate installation to validate the required WAD headers.

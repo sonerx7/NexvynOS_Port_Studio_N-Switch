@@ -1,5 +1,5 @@
-# Kişisel test paketleri
+# Personal test packages
 
-`game/` ve `software/` klasörlerine [stüdyo aracı](../_PortStudioMain/docs/RELEASE_WORKFLOW.md) ile tek dosya `.nxvapp` üretilir. Bu paketler seçilen yerel oyun veya uygulama verisini içerebilir ve Git dışında tutulur. Mağaza adayları ilgili portun `AppMarket/` klasöründedir.
+The [studio tool](../_PortStudioMain/docs/RELEASE_WORKFLOW.md) produces a single `.nxvapp` file in the `game/` and `software/` folders. These packages may contain the selected local game or application data and are kept out of Git. Store candidates are in the `AppMarket/` folder of the respective port.
 
-Yerel `port-market.tsv` ve Internet Archive hazırlığındaki `archive/` çıktıları da Git dışında tutulur. [Port Market rehberi](../_PortStudioMain/docs/PORT_MARKET.md), cihazda güncel sürümlerin nasıl izleneceğini ve indirileceğini açıklar.
+The local `port-market.tsv` and the `archive/` output prepared for the Internet Archive are also kept out of Git. The [Port Market guide](../_PortStudioMain/docs/PORT_MARKET.md) explains how to track and download current versions on the device.

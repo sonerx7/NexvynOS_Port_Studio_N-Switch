@@ -1,46 +1,45 @@
-# “Bunu portla” çalışma kılavuzu
+# Porting playbook
 
-Hedef, mevcut oyun veya programı Nintendo Switch üzerinde Nexvyn OS’un entegre AArch64 native uygulaması olarak çalıştırmaktır. Kılavuz PC, konsol ve diğer platformlardan gelen projeler için aynı sırayı kullanır.
+The target is an integrated AArch64 native application for Nexvyn OS on Nintendo Switch. Start with [FIRST_RUN.md](../../FIRST_RUN.md). For an existing port, run `bootstrap --port <port>` and read its `PORT.md`.
 
-## 1. Hedefi ve mevcut seçenekleri araştır
+## 1. Research the target and options
 
-Önce tam adı, hedef sürümü, sürüm varyantlarını, kaynak platformu ve beklenen asıl kullanım senaryosunu belirle. Varsa mevcut port klasörünü kullan. Yeni hedef için `port_studio.py init game <slug> <kategori>` veya `init software <slug> <kategori>` çalıştır. Kategorileri [public SDK yayın kılavuzundan](../nexvyn_sdk/Publishing/PUBLISHING.md) seç.
+Identify the product, exact version and variants, original platform, expected workflow, and supported user data. Use an existing port directory if one exists. To create one, run `init game <slug> <category>` or `init software <slug> <category>`. See the [SDK publishing guide](../nexvyn_sdk/Publishing/PUBLISHING.md) for categories.
 
-Birincil kaynaklara bak. Geliştiricinin kaynak deposu, lisans dosyası, sürüm notları, derleme belgeleri, çalışan upstream port ve Nexvyn SDK örneklerini incele. Her kaynak için URL, sürüm veya commit ve desteklediği bulguyu `PORT.md` içinde yaz. Ticari oyun dosyalarının kaynağını ve sürümünü kullanıcıya anlaşılır biçimde tarif et.
+Use primary sources such as upstream repositories, licenses, release notes, build documentation, upstream ports, and SDK examples. In `PORT.md`, record each source URL, pinned revision, and evidence. Explain how users obtain the supported data from their own installation.
 
-| Yaklaşım | Kararı verecek kanıt |
+| Approach | Evidence required |
 | --- | --- |
-| Upstream kaynak veya açık motor | Uygun lisans, desteklenen veri sürümleri, derlenebilen AArch64 bağımlılıkları, grafik ve ses arka uçları |
-| Uyumlu yeniden uygulama veya statik yeniden derleme | Doğru veri/sürüm, taşınabilir çalışma zamanı, gereken import ve özellikler için prototip sonucu, çıktıların dağıtım durumu |
-| Uyumluluk katmanı veya emülasyon | Gerçek SDK desteği, performans/izin ölçümü ve kullanıcı beklentisine uygunluk. Uyumluluk çözümü olarak kaydet. |
+| Upstream source or open engine | License, supported data versions, buildable AArch64 dependencies, graphics, audio |
+| Compatible reimplementation or static recompilation | Exact input version, portable runtime, feasibility prototype for key features and imports, redistribution basis |
+| Compatibility layer or emulation | SDK support, measured performance, rights, user expectations |
 
-Grafik API ve uzantıları, CPU/mimari, iş parçacığı ve bellek, giriş aygıtları, ses, dosya sistemi, ağ/TLS, DRM ve harici servisleri incele. Eksik özelliklerin kullanıcı üzerindeki etkisini yaz. Fizibilite sonucunu `uygun`, `kısıtlı` veya `engelli` olarak gerekçelendir. Belirsiz import, render veya veri açma davranışı kararı etkiliyorsa küçük bir native prototiple sınayıp sonucu kaydet. DRM ve lisans doğrulama mekanizmalarını koru.
+Check graphics extensions, CPU, threads, memory, input, audio, storage, network/TLS, DRM and external services. Document the impact of gaps. Mark feasibility as viable, limited, or blocked and explain why. Prototype uncertain rendering, imports, or data loading. Preserve DRM and license checks.
 
-## 2. SDK’yı sabitle ve çalışan çekirdeği üret
+## 2. Pin the SDK and deliver the core workflow
 
-- Ortak [public SDK](../nexvyn_sdk/README.md) içindeki [native port](../nexvyn_sdk/Guides/PORT_AND_LAUNCHER.md), [girdi](../nexvyn_sdk/Guides/INPUT_CONTRACT.md), [uyumluluk](../nexvyn_sdk/Guides/COMPATIBILITY.md), [kalite](../nexvyn_sdk/Guides/PRODUCT_QUALITY.md) ve [çeviri](../nexvyn_sdk/Guides/LOCALIZATION_CONTRACT.md) belgelerini oku.
-- İlk derlemeyi [Switch native derleme adımlarından](CROSS_COMPILATION_CHEATSHEET.md) başlat.
-- Upstream commit, SDK snapshot, derleyici sürümü, build komutları, native ABI, minimum ve hedef SDK/OS sürümlerini kaydet. Ortak SDK’yı kullan, yerel yolları değişkenlerle ver. Sahiplik ve lisans bilgilerini `DISTRIBUTION.md` içine yaz.
-- İlk çalışan dilim veri açıp gerçek bir sahne veya uygulamanın ana işini çalıştırmalı, sonra kaynakları bırakıp masaüstüne dönmeli. Gerçek SDK import’larını ve isteğe bağlı kabiliyetleri kontrol et. Kısıtlı fonksiyon için açık durum bilgisi ve mümkünse geri dönüş ekle.
-- Paket kaynaklarından kullanıcı verisini ayır. Oyuncunun seçtiği klasör dışındaki yolları tarama. Desteklenen sürümü, zorunlu dosyaları ve kullanıcıya gösterilecek hata nedenlerini belirle. Kayıt ve profil dosyalarını uygulamanın kalıcı veri alanında tut.
+- Read the [SDK native port](../nexvyn_sdk/Guides/PORT_AND_LAUNCHER.md), [input](../nexvyn_sdk/Guides/INPUT_CONTRACT.md), [compatibility](../nexvyn_sdk/Guides/COMPATIBILITY.md), [quality](../nexvyn_sdk/Guides/PRODUCT_QUALITY.md), and [localization](../nexvyn_sdk/Guides/LOCALIZATION_CONTRACT.md) documents.
+- Use [the Switch cross-compilation guide](CROSS_COMPILATION_CHEATSHEET.md) for the first build. Record the upstream commit, SDK snapshot, compiler version, build command, native ABI, and minimum and target SDK/OS versions. Use configurable paths. Track source and permissions in `DISTRIBUTION.md`.
+- The first working slice should load data, run a real scene or primary application task, release its resources, and return to the desktop. Check actual imports and available capabilities. Explain any limited feature and implement a fallback where possible.
+- Stage user data separately from the store payload. Use the user-selected data directory and state exactly which versions and files are supported. Save profiles and game saves in the app’s persistent data area.
 
-## 3. Hedefe özel deneyimi tamamla
+## 3. Complete the port-specific experience
 
-[Launcher standardını](PORT_LAUNCHER_STANDARD.md) uygula. Önce oyuna veya programa özgü eylemleri ve gerçekten değiştirilebilen seçenekleri çıkar, sonra ekranı tasarla. Varsayılanlar, handheld ve dock profilleri, giriş şeması, yeniden atamalar, kullanıcı verisinin bulunması ve kalıcı ayarlar aynı uygulama akışında beraber çalışmalı. Kod ve test yükünü ölçerek önce temel kullanım yolunu tamamla.
+Apply the [launcher standard](PORT_LAUNCHER_STANDARD.md). Start with meaningful actions and settings the engine actually applies. Test defaults, handheld and dock profiles, controls, remapping, data selection, and persistence as one workflow.
 
-## 4. Test et ve kanıt topla
+## 4. Test and record evidence
 
-| Senaryo | Kaydedilecek sonuç |
+| Scenario | What to verify |
 | --- | --- |
-| İlk açılış, eksik/yanlış veri, yeniden seçme, iptal | Sürüm doğrulaması, anlaşılır hata, menüye veya masaüstüne güvenli dönüş |
-| Gerçek oyun sahnesi veya uygulama işi | Yükleme süresi, yoğun sahnede kare süresi/performans, tepe bellek, ses ve grafik doğruluğu |
-| Handheld → dock → handheld ve pencere değişimi | Çözünürlük, render ölçeği, oran, netlik ve dokunma koordinatları. Oyunun durumunu koru. |
-| Gamepad, dokunmatik, klavye/fare ve yeniden atama | Menü ve gerçek kullanım, aygıt geçişi, odak kaybı, takılı kalan giriş, ayarların kalıcılığı |
-| Askıya al/devam, kapat/yeniden aç, güncelle | Ses ve giriş yakalama temizliği, kayıtların korunması, uzun çalışmada kaynak kullanımı |
-| Yerelleştirme | Sekiz dilde launcher, ayarlar ve hata metinleri. Uzun metin, CJK ve gerçek ekran yerleşimi. |
+| First launch, missing or incompatible data, reselect, cancel | Version check, actionable errors, safe return to the menu or desktop |
+| Real gameplay or primary application task | Load time, frame time under load, peak memory, audio and graphics |
+| Handheld → dock → handheld and live resize | Resolution, render scale, aspect ratio, touch mapping, session continuity |
+| Gamepad, touch, keyboard and mouse, remapping | Menu and real usage, input changes, focus loss, stuck input, persistence |
+| Suspend and resume, reopen, update | Audio and capture cleanup, saved data, long-running resource use |
+| Localization | All SDK locales, long strings, CJK layout, visible errors |
 
-Her test için cihaz/emülatör ve sürüm, paket sürümü, girdi/veri varyantı ve sonucu `PORT.md` içine yaz. Fiziksel Switch gözlemini emülatör sonucundan ayır. Testi yapamadıysan ve SDK denetimi geçtiyse iki sonucu da açıkça yaz.
+Write the environment, OS and package version, data variant, and result in `PORT.md`. Record host checks, emulator observations, and physical Switch observations with their environments. Keep unavailable tests pending.
 
-## 5. İki çıktıyı ve mağaza gönderisini hazırla
+## 5. Prepare the two packages
 
-[Yayın akışı](RELEASE_WORKFLOW.md) kişisel tek dosyayı, temiz mağaza paketini, mağaza ekran görüntülerini ve sürüm kayıtlarını tanımlar. Beklenen çıktıların konumlarını, doğrulama sonuçlarını ve kalan bilinen sorunları teslimde belirt.
+Use the [release workflow](RELEASE_WORKFLOW.md) for the personal package, store bundle, release records and real screenshots, and read its "Field notes" first (package file-count and size limits, version bump, emulator taps, checking that the game reacts to a gesture before building it). Hand off output paths, passing checks, and known issues.

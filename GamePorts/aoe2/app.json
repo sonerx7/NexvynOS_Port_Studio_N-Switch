@@ -1,0 +1,47 @@
+{
+  "id": "com.sonerx7.aoe2",
+  "name": {
+    "en": "Age of Empires II",
+    "tr": "Age of Empires II",
+    "de": "Age of Empires II",
+    "es": "Age of Empires II",
+    "fr": "Age of Empires II",
+    "ja": "エイジ オブ エンパイア II",
+    "ko": "에이지 오브 엠파이어 2",
+    "zh": "帝国时代 II"
+  },
+  "version": "1.0.1",
+  "author": "Ensemble Studios / sonerx7",
+  "category": "games",
+  "minSdk": "1.10",
+  "targetSdk": "1.15",
+  "minNative": "1.2",
+  "targetNative": "1.2",
+  "minOs": "1.3.26",
+  "runtime": "native",
+  "main": "aoe2.nxvmod",
+  "icon": "icon.png",
+  "mode": "window",
+  "window": {
+    "width": 1280,
+    "height": 720,
+    "resizable": true
+  },
+  "liveResize": true,
+  "gamepad": true,
+  "loadingHint": true,
+  "description": {
+    "en": "Age of Empires II PC native port launcher preview, data validator, and RTS controls experience layer for Nexvyn OS.",
+    "tr": "Nexvyn OS için Age of Empires II PC native portu başlatıcı önizlemesi, veri doğrulayıcısı ve RTS kontrolleri deneyim katmanı.",
+    "de": "Age of Empires II PC nativer Port-Launcher Vorschau, Datenprüfung und RTS-Steuerungserlebnis für Nexvyn OS.",
+    "es": "Vista previa del lanzador del port nativo de PC de Age of Empires II, verificador de datos y capa de experiencia RTS para Nexvyn OS.",
+    "fr": "Aperçu du lanceur de portage natif PC d'Age of Empires II, vérificateur de données et couche d'expérience RTS pour Nexvyn OS.",
+    "ja": "Nexvyn OS向けエイジ オブ エンパイア II PCネイティブ移植ランチャープレビュー、データ検証、RTS操作対応。",
+    "ko": "Nexvyn OS용 에이지 오브 엠파이어 2 PC 네이티브 포트 런처 미리보기, 데이터 검증기 및 RTS 조작 레이어.",
+    "zh": "适用于 Nexvyn OS 的帝国时代 II PC 原生移植启动器预览、数据验证器与 RTS 操控体验层。"
+  },
+  "permissions": [
+    "files"
+  ],
+  "build": 1
+}

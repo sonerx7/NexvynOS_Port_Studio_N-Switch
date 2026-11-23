@@ -1,0 +1,196 @@
+{
+  "schema": 1,
+  "profile": "fps",
+  "description": "First-person: aim, move, fire. Gyro optional.",
+  "input": {
+    "modes": [
+      "auto",
+      "gamepad",
+      "touch",
+      "kbm"
+    ],
+    "defaultMode": "auto",
+    "actions": {
+      "move": {
+        "gamepad": [
+          "lstick"
+        ],
+        "touch": [
+          "virtual_stick_left"
+        ],
+        "kbm": [
+          "wasd"
+        ]
+      },
+      "aim": {
+        "gamepad": [
+          "rstick"
+        ],
+        "touch": [
+          "one_finger_drag_right"
+        ],
+        "kbm": [
+          "mouse_relative"
+        ]
+      },
+      "fire": {
+        "gamepad": [
+          "zr"
+        ],
+        "touch": [
+          "fire_button"
+        ],
+        "kbm": [
+          "mouse1"
+        ]
+      },
+      "interact": {
+        "gamepad": [
+          "x"
+        ],
+        "touch": [
+          "interact_button"
+        ],
+        "kbm": [
+          "e"
+        ]
+      },
+      "jump": {
+        "gamepad": [
+          "a"
+        ],
+        "touch": [
+          "jump_button"
+        ],
+        "kbm": [
+          "space"
+        ]
+      },
+      "menu": {
+        "gamepad": [
+          "plus"
+        ],
+        "touch": [
+          "menu_button"
+        ],
+        "kbm": [
+          "escape"
+        ]
+      },
+      "select": {
+        "gamepad": [
+          "a"
+        ],
+        "touch": [
+          "tap"
+        ],
+        "kbm": [
+          "mouse1"
+        ]
+      },
+      "cancel": {
+        "gamepad": [
+          "b"
+        ],
+        "touch": [
+          "back_button"
+        ],
+        "kbm": [
+          "escape"
+        ]
+      }
+    },
+    "gestures": {
+      "tap": "select"
+    },
+    "gamepad": {
+      "deadzone": 0.15,
+      "sensitivity": 1.0,
+      "invertY": false,
+      "rumble": true,
+      "gyro": false
+    },
+    "touch": {
+      "minTargetPx": 44,
+      "multitouch": true
+    },
+    "zoom": {
+      "method": "none"
+    }
+  },
+  "performance": {
+    "handheld": {
+      "renderScale": 0.75,
+      "resolution": [
+        1280,
+        720
+      ],
+      "fpsCap": 30,
+      "msaa": 0,
+      "shadows": "low"
+    },
+    "docked": {
+      "renderScale": 1.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "fpsCap": 30,
+      "msaa": 0,
+      "shadows": "medium"
+    },
+    "auto": true
+  },
+  "launcher": {
+    "primaryAction": "play",
+    "sections": [
+      "data",
+      "video",
+      "controls",
+      "help"
+    ],
+    "remember": [
+      "dataPath",
+      "mode",
+      "profile"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "move_aim_fire",
+      "title": "Walk, aim and fire",
+      "steps": {
+        "gamepad": "Left stick, right stick, ZR",
+        "touch": "Left on-screen stick, drag right side, Fire button",
+        "kbm": "W A S D, mouse, left click"
+      }
+    },
+    {
+      "id": "buy_menu",
+      "title": "Open the buy menu, choose a weapon, confirm, close",
+      "steps": {
+        "gamepad": "Open with its button, D-pad to move, A to buy, B to close",
+        "touch": "Open with the on-screen button, tap the weapon, tap close",
+        "kbm": "Open with B, press the number, Esc to close"
+      }
+    },
+    {
+      "id": "weapon_switch",
+      "title": "Switch weapon",
+      "steps": {
+        "gamepad": "Bumpers or Y",
+        "touch": "Tap the weapon icon",
+        "kbm": "Number keys or wheel"
+      }
+    },
+    {
+      "id": "menu",
+      "title": "Open the pause menu and resume",
+      "steps": {
+        "gamepad": "+ then B",
+        "touch": "Menu button then back",
+        "kbm": "Esc twice"
+      }
+    }
+  ]
+}

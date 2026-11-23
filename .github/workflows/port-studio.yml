@@ -1,0 +1,24 @@
+name: Port Studio checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-checks:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: python -X utf8 _PortStudioMain/tools/port_studio.py doctor --json --port GamePorts/cs16
+      - run: python -X utf8 _PortStudioMain/tools/port_studio.py doctor --json --port GamePorts/RedAlert2
+      - run: python -X utf8 -m unittest discover -s _PortStudioMain/tools -p "test_*.py"

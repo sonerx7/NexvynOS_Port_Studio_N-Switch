@@ -1,4 +1,4 @@
-"""Yerel veri ve App Market paketinin birbirine karışmamasını sınar."""
+"""Tests that local data and the App Market package never get mixed up."""
 
 import contextlib
 import io
@@ -10,6 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from zipfile import ZipFile
+from zlib import compress, crc32
 
 import port_studio as studio
 import port_market as market
@@ -32,7 +33,8 @@ class PackageChannelsTest(unittest.TestCase):
                 real_sdk_call(tool, *args)
             else:
                 self.assertEqual(args[0], "check-win")
-                self.assertTrue(args[1].is_file())
+                if not args[1].read_bytes().startswith(b"\x7fELF"):
+                    raise ValueError("Invalid native module.")
 
         self.use(patch.object(studio, "sdk_call", side_effect=sdk_call))
         (self.root / "GamePorts").mkdir()
@@ -49,7 +51,7 @@ class PackageChannelsTest(unittest.TestCase):
             "minSdk": "1.10", "targetSdk": "1.15", "minNative": "1.2", "targetNative": "1.2",
             "main": "main.nxvmod", "gamepad": True, "permissions": [],
         })
-        # Bu sentetik dosya yalnızca paket zincirini test eder. Çalıştırılabilir bir oyun değildir.
+        # This synthetic file only tests the package chain. It is not a runnable game.
         header = bytearray(64)
         header[:7] = b"\x7fELF\x02\x01\x01"
         struct.pack_into("<HHI", header, 16, 3, 183, 1)
@@ -73,6 +75,18 @@ class PackageChannelsTest(unittest.TestCase):
             "features": ["offline", "controller"], "shots": [["wait 1"], ["wait 2"], ["wait 3"]],
         })
         (self.item / "README.md").write_text("# Fixture Port", encoding="utf-8")
+        (self.item / "screenshots").mkdir()
+        def png_chunk(kind, value):
+            return struct.pack(">I", len(value)) + kind + value + struct.pack(">I", crc32(kind + value))
+
+        screenshot = (
+            b"\x89PNG\r\n\x1a\n"
+            + png_chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 0, 0, 0, 0))
+            + png_chunk(b"IDAT", compress(b"\0\0"))
+            + png_chunk(b"IEND", b"")
+        )
+        for index in range(1, 4):
+            (self.item / "screenshots" / f"{index}.png").write_bytes(screenshot)
         self.data = self.root / "data"
         (self.data / "owned").mkdir(parents=True)
         (self.data / "owned/main.mix").write_bytes(b"personal only")
@@ -84,6 +98,7 @@ class PackageChannelsTest(unittest.TestCase):
         self.write_json(self.port / "port.json", {
             "slug": "fixture-port", "storeCategory": "strategy",
             "publicFiles": self.public, "localData": mappings,
+            "release": {"status": "ready", "version": "1.2.3", "reasons": []},
         })
 
     def cli(self, *args):
@@ -109,17 +124,17 @@ class PackageChannelsTest(unittest.TestCase):
         self.assertEqual(self.cli("pack", "store", self.port, "--data-root", self.data), 1)
         (self.source / "unlisted.bin").write_bytes(b"potential personal data")
         self.assertEqual(self.cli("pack", "store", self.port), 1)
-        self.assertIn("liste dışı: unlisted.bin", self.last_error)
+        self.assertIn("not listed: unlisted.bin", self.last_error)
         self.assertEqual(store.read_bytes(), before)
 
     def test_rejects_overlap_and_missing_version_entry(self):
         self.configure([{"from": "owned/main.mix", "to": "LANG/en.json"}])
         self.assertEqual(self.cli("check", "store", self.port), 1)
-        self.assertIn("kişisel veri hedefiyle çakışıyor", self.last_error)
+        self.assertIn("collides with a personal-data target", self.last_error)
         self.configure([])
         (self.port / "KNOWN_ISSUES.md").write_text("# Bilinen sorunlar\n\n## 1.2.30\n\n- Veri.", encoding="utf-8")
         self.assertEqual(self.cli("check", "local", self.port), 1)
-        self.assertIn("## 1.2.3 altında", self.last_error)
+        self.assertIn("## 1.2.3 section", self.last_error)
 
     def test_software_scaffold_and_no_overwrite(self):
         self.assertEqual(self.cli("init", "software", "fixture-app", "utilities"), 0, self.last_error)
@@ -130,10 +145,56 @@ class PackageChannelsTest(unittest.TestCase):
 
     def test_store_rejects_fake_screenshot(self):
         screenshots = self.item / "screenshots"
-        screenshots.mkdir()
         (screenshots / "1.png").write_bytes(b"not a PNG")
         self.assertEqual(self.cli("check", "store", self.port), 1)
-        self.assertIn("Geçersiz mağaza ekran görüntüsü", self.last_error)
+        self.assertIn("Invalid store screenshot", self.last_error)
+
+    def test_shot_scenarios_allow_check_but_not_release_package(self):
+        for shot in (self.item / "screenshots").glob("*.png"):
+            shot.unlink()
+        self.assertEqual(self.cli("check", "store", self.port), 0, self.last_error)
+        self.assertEqual(self.cli("pack", "store", self.port), 1)
+        self.assertIn("1.png", self.last_error)
+
+    def test_release_hold_keeps_technical_check_and_local_package_available(self):
+        config = studio.read_json(self.port / "port.json")
+        config["release"] = {"status": "blocked", "reasons": ["Cihaz testi bekliyor."]}
+        self.write_json(self.port / "port.json", config)
+        self.assertEqual(self.cli("check", "store", self.port), 0, self.last_error)
+        self.assertEqual(self.cli("pack", "local", self.port, "--data-root", self.data), 0, self.last_error)
+        self.assertEqual(self.cli("pack", "store", self.port), 1)
+        self.assertIn("Cihaz testi bekliyor.", self.last_error)
+        request = SimpleNamespace(port=self.port, item="fixture-release", license="CC0-1.0",
+                                  output=self.root / "archive", full_package=False)
+        with self.assertRaisesRegex(ValueError, "Cihaz testi bekliyor"):
+            market.archive(request)
+
+    def test_pin_rejects_sdk_version_mismatch_at_same_commit(self):
+        path = self.port / "sdk.lock.json"
+        pin = studio.read_json(path)
+        pin["native"] = "999"
+        self.write_json(path, pin)
+        self.assertEqual(self.cli("check", "store", self.port), 1)
+        self.assertIn("Native 999", self.last_error)
+
+    def test_release_approval_is_tied_to_the_reviewed_version(self):
+        config = studio.read_json(self.port / "port.json")
+        config["release"]["version"] = "1.2.2"
+        self.write_json(self.port / "port.json", config)
+        self.assertEqual(self.cli("check", "store", self.port), 0, self.last_error)
+        self.assertEqual(self.cli("pack", "store", self.port), 1)
+        self.assertIn("Review version 1.2.3", self.last_error)
+
+    def test_stage_accepts_only_validated_module_and_preserves_existing_on_error(self):
+        old = (self.source / "main.nxvmod").read_bytes()
+        incoming = self.root / "incoming.nxvmod"
+        incoming.write_bytes(b"invalid module")
+        self.assertEqual(self.cli("stage", self.port, "--module", incoming), 1)
+        self.assertEqual((self.source / "main.nxvmod").read_bytes(), old)
+        (self.source / "main.nxvmod").unlink()
+        incoming.write_bytes(old)
+        self.assertEqual(self.cli("stage", self.port, "--module", incoming), 0, self.last_error)
+        self.assertEqual((self.source / "main.nxvmod").read_bytes(), old)
 
     def test_archive_full_package_requires_explicit_distribution_setting(self):
         self.assertEqual(self.cli("pack", "local", self.port, "--data-root", self.data), 0, self.last_error)
@@ -150,6 +211,7 @@ class PackageChannelsTest(unittest.TestCase):
             self.assertEqual(package.read("game/main.mix"), b"personal only")
         metadata = studio.read_json(request.output / "internet-archive.json")
         self.assertEqual(metadata["identifier"], "fixture-release")
+        self.assertEqual(metadata["title"], "Fixture 1.2.3")
 
 
 class SdkSnapshotTest(unittest.TestCase):
@@ -168,10 +230,15 @@ class SdkSnapshotTest(unittest.TestCase):
             path = source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("fixture", encoding="utf-8")
-        (source / "VERSION.json").write_text('{"os":"1.0","sdk":"1.0","native":"1.0"}', encoding="utf-8")
+        (source / "VERSION.json").write_text(
+            '{"os":"1.0","sdk":"1.0","native":"1.0","requiredLocales":["en"]}', encoding="utf-8"
+        )
 
         def git_stub(_checkout, command, *_args):
-            return {"rev-parse": "a" * 40, "status": "", "ls-files": "\0".join(f"SDK/{name}" for name in files)}[command]
+            return {
+                "rev-parse": "a" * 40, "status": "", "ls-files": "\0".join(f"SDK/{name}" for name in files),
+                "config": f"https://github.com/{studio.SDK_REPOSITORY}.git",
+            }[command]
 
         with patch.multiple(sdk_sync, STUDIO=st, SDK=installed, git=git_stub):
             sdk_sync.sync(checkout, verify_tools=False)

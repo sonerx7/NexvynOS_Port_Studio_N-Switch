@@ -3,6 +3,17 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [SemVer](https://semver.org/).
 
+## [1.2.3] - Nexvyn OS
+
+- Overview tab in two columns with Show FPS first; the per-file check moved to a new Files tab.
+- The controls summary no longer lists zoom: the game ignores the mouse wheel, so pinch-to-zoom is not offered. Two-finger gestures are classified from the net finger movement.
+- The launcher logo is visible again in emulator runs.
+
+## [1.2.2] - Nexvyn OS
+
+- Launcher redesigned with the Port Studio standard: hero with a large Play button, column cards, handheld and docked ordering, and a "How to play" tab.
+- Optional two-finger gestures (pinch and sidebar scroll to mouse wheel), off by default.
+
 ## [1.2.1] - Nexvyn OS
 
 - Launcher distinguishes missing files from an executable variant unsupported by the static recompiler.

@@ -1,19 +1,22 @@
-# Nintendo Switch üzerinde Nexvyn OS native derleme
+# Cross-compile native Nexvyn OS modules for Nintendo Switch
 
-Public SDK’nın [native kit rehberini](../nexvyn_sdk/Guides/NATIVE_KIT.md) ve [araç zinciri kurulumunu](../nexvyn_sdk/Languages/c/native-kit/README.md) izle. Entegre portun çıktısı AArch64 ELF `.nxvmod` modülü. Pencere veya fullscreen davranışı manifestte ve motorun yaşam döngüsünde tanımlanır.
+Native ports build as AArch64 ELF modules with the `.nxvmod` extension. The manifest sets the initial window or fullscreen mode, and the port handles display changes during its lifecycle. Follow the [Native Kit installation guide](../nexvyn_sdk/Guides/NATIVE_KIT.md#install) and start with the public SDK snapshot locked to the port.
 
-Depo kökünden temel akış:
+For a small native prototype, install the devkitPro `switch-glad` package and run these commands from the Studio root in PowerShell. For an existing port, use its build steps in `PORT.md`.
 
 ```powershell
 $nativeKit = "_PortStudioMain/nexvyn_sdk/Languages/c/native-kit"
-python "$nativeKit/tools/nxv_native" doctor
-python "$nativeKit/tools/nxv_native" new motor-prototip --template port --dir "GamePorts/ornek-oyun"
-python "$nativeKit/tools/nxv_native" build "GamePorts/ornek-oyun/motor-prototip"
-python "$nativeKit/tools/nxv_native" check-win "<derlenen .nxvmod dosyası>"
+$prototype = "_LocalData/native-prototype"
+python -X utf8 "$nativeKit/tools/nxv_native" doctor
+python -X utf8 "$nativeKit/tools/nxv_native" new native-prototype --template app --dir "_LocalData"
+python -X utf8 "$nativeKit/tools/nxv_native" build "$prototype"
+python -X utf8 "$nativeKit/tools/nxv_native" check-win "$prototype/build/native-prototype.nxvmod"
 ```
 
-Kendi CMake entegrasyonunda bu şablondaki Nexvyn toolchain ve modül hedefini kullan. Bahsedilen örnek şablon yeni port çekirdeği içindir. Mevcut port için kendi derleme sistemini ve bağımlılıklarını incele. Windows’ta devkitPro standart dışı bir dizindeyse `DEVKITPRO_WIN`, diğer sistemlerde `DEVKITPRO` kullan. Dış bağımlılık ve sysroot yollarını yapılandırılabilir tut. Portun yeniden üretilebilir build komutunu ve bağımlılık sürümlerini `PORT.md` içine yaz.
+Point `$nativeKit` to the Native Kit in the selected snapshot if the port uses an SDK other than the default. Set `DKP_BASH` for direct Native Kit commands when devkitPro MSYS2 is outside its default Windows location. On Linux, set `DEVKITPRO` and make the build tools available on `PATH`.
 
-- Dosya sürümlerini ve büyük/küçük harf davranışını hedefte doğrula. Kullanıcı verisinin adını veya içeriğini değiştirmeden güvenli eşleştir.
-- x86’dan gelen serileştirme kodunda hizalama, erişim ve endian varsayımlarını açıkça sınayıp düzelt. Grafik, ses ve sistem API’lerinin çalışma davranışını ilk prototipte doğrula.
-- Native modül kimliği, relocation ve import kontrolleri geçince modülü [yayın çalışma akışındaki](RELEASE_WORKFLOW.md) `source/` klasörüne yerleştir.
+For a CMake-based upstream engine, use the Native Kit `port` template as a reference for the Nexvyn toolchain and module target. Its sample uses SDL2. Build the windowed SDL2 sysroot from the same SDK snapshot and pass its root to `build --sysroot <path>`. Keep external dependency and sysroot paths configurable. Record the build command and dependency versions in `PORT.md`. [Windowed SDL2 setup](../nexvyn_sdk/Guides/NATIVE_KIT.md#sdl2-in-a-window)
+
+- Verify file versions and case handling on the target. Match user data without renaming or changing it.
+- Test alignment, memory access, and byte order when porting x86 serialization code. Verify graphics, audio, and system APIs in the first prototype.
+- Use `stage <port> --module <path>` to validate the module's identity, relocations, and imports and place it in the package's `source/` directory. [Release workflow](RELEASE_WORKFLOW.md)

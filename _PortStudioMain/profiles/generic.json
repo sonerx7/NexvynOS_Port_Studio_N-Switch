@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "profile": "generic",
+  "description": "Minimal: select/cancel/menu on all devices.",
+  "input": {
+    "modes": [
+      "auto",
+      "gamepad",
+      "touch",
+      "kbm"
+    ],
+    "defaultMode": "auto",
+    "actions": {
+      "select": {
+        "gamepad": [
+          "a"
+        ],
+        "touch": [
+          "tap"
+        ],
+        "kbm": [
+          "mouse1"
+        ]
+      },
+      "cancel": {
+        "gamepad": [
+          "b"
+        ],
+        "touch": [
+          "back_button"
+        ],
+        "kbm": [
+          "escape"
+        ]
+      },
+      "menu": {
+        "gamepad": [
+          "plus"
+        ],
+        "touch": [
+          "menu_button"
+        ],
+        "kbm": [
+          "escape"
+        ]
+      }
+    },
+    "gestures": {
+      "tap": "select"
+    },
+    "gamepad": {
+      "deadzone": 0.15,
+      "sensitivity": 1.0,
+      "invertY": false,
+      "rumble": true
+    },
+    "touch": {
+      "minTargetPx": 44,
+      "multitouch": true
+    },
+    "zoom": {
+      "method": "none"
+    }
+  },
+  "performance": {
+    "handheld": {
+      "renderScale": 0.75,
+      "resolution": [
+        1280,
+        720
+      ],
+      "fpsCap": 30,
+      "msaa": 0,
+      "shadows": "low"
+    },
+    "docked": {
+      "renderScale": 1.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "fpsCap": 30,
+      "msaa": 0,
+      "shadows": "medium"
+    },
+    "auto": true
+  },
+  "launcher": {
+    "primaryAction": "play",
+    "sections": [
+      "data",
+      "video",
+      "controls",
+      "help"
+    ],
+    "remember": [
+      "dataPath",
+      "mode",
+      "profile"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "menu_flow",
+      "title": "Open a menu, move, confirm and go back",
+      "steps": {
+        "gamepad": "D-pad, A, B",
+        "touch": "Tap, back button",
+        "kbm": "Click, Esc"
+      }
+    }
+  ]
+}

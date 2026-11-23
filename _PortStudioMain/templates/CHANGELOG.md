@@ -1,5 +1,5 @@
-# Sürüm geçmişi
+# Changelog
 
-## Yayınlanmamış
+## Unreleased
 
-<!-- Her paket sürümü için ## 1.0.0 biçiminde ayrı bölüm ve somut değişiklikler yaz. -->
+<!-- Add a dedicated version section such as ## 1.0.0 and record concrete changes. -->

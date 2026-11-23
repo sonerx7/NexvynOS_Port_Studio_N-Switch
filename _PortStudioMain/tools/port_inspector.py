@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port klasörlerinde mevcut kanıtların ve paket çıktıların envanteri."""
+"""Inventory of the evidence and package outputs present in port folders."""
 
 import json
 from pathlib import Path
@@ -13,17 +13,17 @@ def inspect_studio(root_dir):
         base = root / category
         print(f"\n{category}")
         if not base.is_dir():
-            print("  Kategori klasörü bulunamadı.")
+            print("  Category folder not found.")
             continue
         for port in sorted(base.iterdir()):
             if port.name.startswith(".") or not port.is_dir() or port.is_symlink():
                 continue
             print(f"  {port.name}")
             indicators = (
-                ("Port dosyası", (port / "PORT.md").is_file()),
+                ("Port file", (port / "PORT.md").is_file()),
                 ("Belgeler", (port / "README.md").is_file() or (port / "docs").is_dir()),
-                ("Kaynak klasörü", (port / "src").is_dir()),
-                ("Sürüm kayıtları", all((port / name).is_file() for name in ("CHANGELOG.md", "KNOWN_ISSUES.md"))),
+                ("Source folder", (port / "src").is_dir()),
+                ("Release records", all((port / name).is_file() for name in ("CHANGELOG.md", "KNOWN_ISSUES.md"))),
             )
             print("    " + " | ".join(f"{name}: {'var' if value else 'yok'}" for name, value in indicators))
             if (port / "port.json").is_file():
@@ -33,15 +33,15 @@ def inspect_studio(root_dir):
                     store = item / f"{slug}.nxvapp"
                     app = json.loads((item / "source" / "app.json").read_text(encoding="utf-8-sig"))
                     personal = root / RELEASE_ROOT / channel / slug / f"{app['id']}-{app['version']}-local.nxvapp"
-                    print(f"    Manifest sürümü: {app['version']} | Kişisel: {'var' if personal.is_file() else 'yok'}"
-                          f" | Mağaza adayı: {'var' if store.is_file() else 'yok'}")
+                    print(f"    Manifest version: {app['version']} | Personal: {'yes' if personal.is_file() else 'no'}"
+                          f" | Store candidate: {'yes' if store.is_file() else 'no'}")
                 except (KeyError, OSError, TypeError, ValueError) as error:
-                    print(f"    Paketleme tanımı hazırlanıyor: {error}")
+                    print(f"    Packaging definition in progress: {error}")
             else:
                 manifest = (port / "app.json").is_file()
                 builds = sum(1 for path in (port / "dist").glob("*.nxvapp") if path.is_file())
                 print(f"    Mevcut manifest: {'var' if manifest else 'yok'} | Mevcut .nxvapp: {builds}"
-                      " | Yeni paketleme tanımı: yok")
+                      " | New packaging definition: none")
 
 
 if __name__ == "__main__":

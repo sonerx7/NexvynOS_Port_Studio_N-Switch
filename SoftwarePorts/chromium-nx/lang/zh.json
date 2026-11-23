@@ -1,0 +1,6 @@
+{
+  "app_name": "Chromium NX",
+  "desc": "基于 Linux Kernel Library (LKL) 的任天堂 Switch 版 Chromium 网页浏览器，直接启动。",
+  "loading": "正在启动 Chromium...",
+  "quit": "退出"
+}

@@ -6,6 +6,7 @@
     "ra2.nxvmod",
     "icon.png",
     "LICENSE",
+    "LICENSE-IMGUI.txt",
     "NOTICE.md",
     "assets/logo.nximg",
     "lang/de.json",
@@ -17,6 +18,38 @@
     "lang/tr.json",
     "lang/zh.json"
   ],
+  "build": {
+    "driver": "manual",
+    "files": [
+      "build_nx.sh",
+      "patches/pcrecomp.commit",
+      "patches/pcrecomp-nexvyn.patch",
+      "src/recomp/gen/lift_stamp.txt"
+    ],
+    "devkitFiles": [
+      "cmake/Switch.cmake",
+      "portlibs/switch/include/glad/glad.h",
+      "portlibs/switch/lib/libglad.a"
+    ],
+    "environment": {
+      "PCRECOMP": [
+        "runtime/win32hle",
+        "runtime/recomp32",
+        "tools/lift/generate.py"
+      ],
+      "NEXVYN_SYSROOT": [
+        "windowed/lib/libSDL2.a",
+        "windowed/include/SDL2/SDL.h"
+      ]
+    }
+  },
+  "release": {
+    "status": "blocked",
+    "reasons": [
+      "Redistribution clearance is pending for the lifted game code and game visuals.",
+      "Gameplay, dock transitions, and input acceptance are still pending on a physical Switch."
+    ]
+  },
   "localData": [
     {
       "from": "assets/RA2.CSF",
@@ -102,5 +135,106 @@
       "from": "game/ra2md.ini",
       "to": "game/ra2md.ini"
     }
-  ]
+  ],
+  "experience": {
+    "schema": 1,
+    "profile": "rts",
+    "input": {
+      "touch": {
+        "panSensitivity": {
+          "default": 1.0,
+          "min": 0.5,
+          "max": 2.0
+        },
+        "invertPan": true
+      },
+      "edgeScroll": {
+        "default": true,
+        "rate": {
+          "default": 4,
+          "min": 1,
+          "max": 6
+        }
+      },
+      "gestures": {
+        "two_finger_tap": "command",
+        "pinch": null
+      },
+      "engineFacts": "Verified in port source (src/nx/main.c, launcher.cpp): two-finger drag pans the camera, long press and two-finger tap send a right click, nothing handles pinch. The mouse wheel is only forwarded as WM_MOUSEWHEEL. Not yet tested in the running game: whether Yuri's Revenge reacts to the wheel. Until tested, pinch uses the present method (port-side magnification).",
+      "zoom": {
+        "method": "none",
+        "min": 1.0,
+        "max": 1.0,
+        "step": 0.25,
+        "defaultOn": false,
+        "evidence": "Emulator, 2026-11-23, skirmish map: injected pinch-out and pinch-in produced touch wheel +120 and -120 events through hle_input_wheel, and the camera did not change between ra2_map_start.png and ra2_map_pinch_in.png. Yuri's Revenge ignores the mouse wheel for zoom. Port-side magnification (method present) is not built."
+      },
+      "scroll": {
+        "twoFingerDragInSidebar": "wheel",
+        "note": "A two-finger drag that starts in the right 20% of the screen sends the wheel (lists and the sidebar); elsewhere it pans the camera."
+      },
+      "unsupported": [
+        "camera_zoom"
+      ]
+    },
+    "performance": {
+      "autoDockDefault": false,
+      "notes": "Frame rate on device not yet measured. Preset caps apply until measured. Values mirror src/nx/launcher.cpp defaults."
+    },
+    "launcher": {
+      "sections": [
+        "data",
+        "video",
+        "controls",
+        "mods",
+        "help"
+      ]
+    }
+  },
+  "emulator": {
+    "targets": {
+      "play": {
+        "handheld": [
+          816,
+          172
+        ]
+      },
+      "single_player": {
+        "handheld": [
+          1150,
+          265
+        ]
+      },
+      "play_maximized": {
+        "handheld": [
+          1039,
+          77
+        ]
+      },
+      "skirmish": {
+        "handheld": [
+          1152,
+          365
+        ]
+      },
+      "start_game": {
+        "handheld": [
+          1152,
+          315
+        ]
+      },
+      "tab_howto": {
+        "handheld": [
+          409,
+          207
+        ]
+      },
+      "tab_files": {
+        "handheld": [
+          519,
+          207
+        ]
+      }
+    }
+  }
 }

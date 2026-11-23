@@ -1,40 +1,40 @@
-# Port dosyası
+# Port record
 
 <!-- PORT_STUDIO_TEMPLATE -->
 
-## Hedef
+## Target
 
-- Ürün, kaynak platform ve sürüm
-- Kullanıcının gerçek kullanım senaryosu
-- Desteklenecek içerik ve veri sürümleri
+- Product, source platform, and version
+- Primary workflow on Switch
+- Supported data versions and required files
 
-## Araştırma ve fizibilite
+## Research and feasibility
 
-| Kaynak URL / revizyon | Kanıt | Karara etkisi |
+| Source and revision | Evidence | Effect on the decision |
 | --- | --- | --- |
 | | | |
 
-- Değerlendirilen kaynak/motor ve alternatifler
-- AArch64, ABI/import, grafik, bellek, ses, depolama, giriş, DRM ve ağ gereksinimleri
-- Prototip sonucu ve karar (uygun / kısıtlı / engelli)
-- Upstream ve SDK revizyonu, derleyici, yeniden üretilebilir derleme komutu, minimum/hedef OS ve ABI
+- Evaluated engines, source options, and alternatives
+- AArch64, ABI/import, graphics, memory, audio, storage, input, DRM, and network requirements
+- Prototype evidence and decision (viable, limited, or blocked)
+- Upstream and SDK commits, compiler, build command, minimum and target OS/SDK, and ABI
 
-## Launcher, ayarlar ve kontroller
+## Launcher, settings, and controls
 
-| Eylem veya ayar | Gamepad | Dokunma | Klavye/fare | Varsayılan / geçiş / kalıcılık |
+| Action or setting | Gamepad | Touch | Keyboard/mouse | Default, transitions, and persistence |
 | --- | --- | --- | --- | --- |
 | | | | | |
 
-- İçerik seçimi, hata ve ilk açılış akışı
-- Handheld/dock ölçümleri, otomatik profil ve uygulama koşulu
+- Data selection, errors, and first launch
+- Handheld and dock measurements, automatic profile, and transition conditions
 
-## Doğrulama
+## Verification
 
-| Senaryo | Cihaz / OS / paket / veri | Sonuç ve kanıt |
+| Scenario | Environment, OS, package, and data | Result and evidence |
 | --- | --- | --- |
-| İlk açılış ve eksik/yanlış veri | | |
-| Gameplay veya ana uygulama işi | | |
-| Dock / handheld / pencere geçişi | | |
-| Dört giriş biçimi, yeniden atama ve cihaz ayrılması | | |
-| Suspend, kapatma ve güncelleme | | |
-| Yerelleştirme ve gerçek mağaza görüntüleri | | |
+| First launch and missing/incompatible data | | |
+| Gameplay or primary application task | | |
+| Dock, handheld, and window transition | | |
+| Input devices, remapping, and disconnect | | |
+| Suspend, close, and update | | |
+| Localization and real store screenshots | | |

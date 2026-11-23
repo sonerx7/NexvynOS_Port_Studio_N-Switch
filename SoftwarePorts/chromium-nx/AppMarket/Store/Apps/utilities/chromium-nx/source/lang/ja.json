@@ -1,0 +1,6 @@
+{
+  "app_name": "Chromium NX",
+  "desc": "Linux Kernel Library（LKL）を介したNintendo Switch用Chromiumウェブブラウザ。ダイレクト起動。",
+  "loading": "Chromiumを起動中...",
+  "quit": "終了"
+}

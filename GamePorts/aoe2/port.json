@@ -1,0 +1,79 @@
+{
+  "slug": "aoe2",
+  "storeCategory": "strategy",
+  "publicFiles": [
+    "app.json",
+    "aoe2.nxvmod",
+    "icon.png",
+    "LICENSE",
+    "LICENSE-IMGUI.txt",
+    "NOTICE.md",
+    "lang/de.json",
+    "lang/en.json",
+    "lang/es.json",
+    "lang/fr.json",
+    "lang/ja.json",
+    "lang/ko.json",
+    "lang/tr.json",
+    "lang/zh.json"
+  ],
+  "build": {
+    "driver": "sdk",
+    "files": [
+      "CMakeLists.txt"
+    ],
+    "devkitFiles": [
+      "cmake/Switch.cmake",
+      "portlibs/switch/include/glad/glad.h",
+      "portlibs/switch/lib/libglad.a"
+    ]
+  },
+  "release": {
+    "status": "blocked",
+    "reasons": [
+      "Upstream decompilation (samuelcaldas/age-of-empires-2-decomp) PC target has 0% progress and no executable splits. The Genie engine integration is pending; current module is a native launcher preview.",
+      "Gameplay on device and distribution review still need verification."
+    ]
+  },
+  "localData": [
+    {
+      "from": "Data/graphics.drs",
+      "to": "game/data/graphics.drs"
+    },
+    {
+      "from": "Data/interfac.drs",
+      "to": "game/data/interfac.drs"
+    },
+    {
+      "from": "Data/sounds.drs",
+      "to": "game/data/sounds.drs"
+    },
+    {
+      "from": "Data/terrain.drs",
+      "to": "game/data/terrain.drs"
+    },
+    {
+      "from": "Data/gamedata.drs",
+      "to": "game/data/gamedata.drs"
+    },
+    {
+      "from": "Data/empires2.dat",
+      "to": "game/data/empires2.dat"
+    },
+    {
+      "from": "language.dll",
+      "to": "game/language.dll"
+    },
+    {
+      "from": "empires2.exe",
+      "to": "game/empires2.exe"
+    }
+  ],
+  "experience": {
+    "schema": 1,
+    "profile": "rts",
+    "input": {
+      "engineFacts": "Launcher preview: the Genie engine is not yet linked. The PC decomp target in samuelcaldas/age-of-empires-2-decomp lacks IDA Pro splits. generated/scenarios.md is the acceptance test list for when the engine runs."
+    }
+  }
+}

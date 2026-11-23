@@ -30,6 +30,8 @@
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include <nexvyn/nxn_os_ui.h>
+#include "nx_launcher_ui.h" /* hero, grid, tabs: the Port Studio launcher standard */
+#include "nx_howto_ui.h" /* shared how-to tab; data generated from port.json by port_studio.py experience */
 
 #define RA2_WANT_STAMP 0x3BDF544Eu
 
@@ -97,6 +99,7 @@ static void set_control_defaults(ra2_config_t *cfg) {
     cfg->r3_action = 0; /* Select Same Type (T) */
     cfg->longpress_rc = 1;
     cfg->twofinger_rc = 1;
+    cfg->touch_wheel = 0;   /* untested in the running game: opt in */
     cfg->touch_pan_sens = 1.0f;
     cfg->touch_pan_invert = 1;
     cfg->confine_mouse = 1;
@@ -192,6 +195,7 @@ static void config_save(const ra2_config_t *c) {
         "r3_action=%d\n"
         "longpress_rc=%d\n"
         "twofinger_rc=%d\n"
+        "touch_wheel=%d\n"
         "touch_pan_sens=%.2f\n"
         "touch_pan_invert=%d\n"
         "confine_mouse=%d\n",
@@ -203,7 +207,7 @@ static void config_save(const ra2_config_t *c) {
         c->rstick_pan, c->twofinger_pan, c->dpad_pan, c->wasd_pan, c->edge_scroll, c->scroll_rate,
         c->cursor_speed, c->deadzone,
         c->y_action, c->l_action, c->r_action, c->l3_action, c->r3_action,
-        c->longpress_rc, c->twofinger_rc, c->touch_pan_sens, c->touch_pan_invert, c->confine_mouse
+        c->longpress_rc, c->twofinger_rc, c->touch_wheel, c->touch_pan_sens, c->touch_pan_invert, c->confine_mouse
     );
     if (n > 0) {
         if (nxn_fs_write(NXN_DIR_DATA, "ra2_launcher.cfg", buf, (size_t)n) != NXN_OK) {
@@ -265,6 +269,7 @@ static void config_load(ra2_config_t *c) {
             else if (!strcmp(k, "r3_action")) c->r3_action = atoi(v);
             else if (!strcmp(k, "longpress_rc")) c->longpress_rc = atoi(v) != 0;
             else if (!strcmp(k, "twofinger_rc")) c->twofinger_rc = atoi(v) != 0;
+            else if (!strcmp(k, "touch_wheel")) c->touch_wheel = atoi(v) != 0;
             else if (!strcmp(k, "touch_pan_sens")) c->touch_pan_sens = (float)atof(v);
             else if (!strcmp(k, "touch_pan_invert")) c->touch_pan_invert = atoi(v) != 0;
             else if (!strcmp(k, "confine_mouse")) c->confine_mouse = atoi(v) != 0;
@@ -788,24 +793,15 @@ extern "C" int ra2_run_launcher(ra2_config_t *cfg) {
         nxn_imgui_input(input_backend, pad_in, dt);
         nxn_os_frame_begin(&tok, (int)fb_w, (int)fb_h);
 
-        bool compact = ((float)fb_w / nxn_os_scale()) < 680.0f;
 
-        /* ---- Top Hero Header Card ---- */
-        nxn_os_card_begin("hero_card", tok);
-        {
-            if (img_logo.tex) {
-                float sz = NXN_S(48);
-                ImGui::Image((ImTextureID)(intptr_t)img_logo.tex, ImVec2(sz, sz));
-                ImGui::SameLine(0.0f, NXN_S(12));
-            }
-            ImGui::BeginGroup();
-            nxn_os_text(NXN_OS_TEXT_TITLE, nxn_tr("app.title"));
-            nxn_os_text(NXN_OS_TEXT_CAPTION, nxn_tr("app.subtitle"));
-            ImGui::EndGroup();
-
-            nxn_os_gap(NXN_OS_SP_XS);
-
-            nxn_os_row_begin();
+        /* ---- Hero: the Port Studio launcher standard (portkit/nx_launcher_ui.h) ---- */
+        nx_hero_desc hero = {};
+        hero.title = nxn_tr("app.title");
+        hero.subtitle = nxn_tr("app.subtitle");
+        hero.logo = img_logo.tex ? (ImTextureID)(intptr_t)img_logo.tex : (ImTextureID)0;
+        hero.play_label = nxn_tr(vs.ok ? "btn.play" : "btn.browse");
+        hero.exit_label = nxn_tr("btn.quit");
+        int hero_action = nx_hero(hero, tok, [&]() {
             nxn_os_badge(nxn_tr(vs.ok ? "status.ready" : vs.has_gamemd && !vs.stamp_ok
                 ? "status.unsupported" : "status.missing"),
                          vs.ok ? k_green : k_red, tok);
@@ -826,45 +822,18 @@ extern "C" int ra2_run_launcher(ra2_config_t *cfg) {
                     nxn_os_badge(pbuf, 0xFF6B7280u, tok);
                 }
             }
-            if (!compact) {
-                const char *primary = nxn_tr(vs.ok ? "btn.play" : "btn.browse");
-                const float bw = ImGui::CalcTextSize(primary).x + NXN_S(28);
-                nxn_os_align_right(bw + NXN_S(96));
-                if (nxn_os_button(nxn_tr("btn.quit"), NXN_OS_BTN_DEFAULT, tok, ImVec2(NXN_S(86), 0))) {
-                    done = true;
-                    result = 0;
-                }
-                if (nxn_os_button(primary, NXN_OS_BTN_PRIMARY, tok, ImVec2(bw, 0))) {
-                    if (vs.ok) {
-                        sync_dock_resolution(cfg, caps);
-                        config_save(cfg);
-                        done = true;
-                        result = 1;
-                    } else choose_game();
-                }
-            }
-            nxn_os_row_end();
-
-            if (compact) {
-                nxn_os_gap(NXN_OS_SP_XS);
-                nxn_os_row_begin();
-                if (nxn_os_button(nxn_tr(vs.ok ? "btn.play" : "btn.browse"), NXN_OS_BTN_PRIMARY, tok,
-                        ImVec2(nxn_os_fill(0.65f), 0))) {
-                    if (vs.ok) {
-                        sync_dock_resolution(cfg, caps);
-                        config_save(cfg);
-                        done = true;
-                        result = 1;
-                    } else choose_game();
-                }
-                if (nxn_os_button(nxn_tr("btn.quit"), NXN_OS_BTN_DEFAULT, tok, ImVec2(nxn_os_fill(1.0f), 0))) {
-                    done = true;
-                    result = 0;
-                }
-                nxn_os_row_end();
-            }
+        });
+        if (hero_action == NX_HERO_EXIT) {
+            done = true;
+            result = 0;
+        } else if (hero_action == NX_HERO_PLAY) {
+            if (vs.ok) {
+                sync_dock_resolution(cfg, caps);
+                config_save(cfg);
+                done = true;
+                result = 1;
+            } else choose_game();
         }
-        nxn_os_card_end();
 
         nxn_os_gap(NXN_OS_SP_S);
 
@@ -875,57 +844,34 @@ extern "C" int ra2_run_launcher(ra2_config_t *cfg) {
             nxn_os_gap(NXN_OS_SP_XS);
         }
 
-        const char *tab_labels[4] = {
+        const char *tab_labels[6] = {
             nxn_tr("tab.overview"),
             nxn_tr("tab.video"),
             nxn_tr("tab.controls"),
+            nxn_tr(NX_HOWTO_TITLE_KEY),
+            nxn_tr("tab.files"),
             nxn_tr("tab.logs")
         };
-        nxn_os_segmented_tabs("##main_tabs", tab_labels, 4, &active_tab, tok);
+        nx_tabs("##main_tabs", tab_labels, 6, &active_tab, tok);
         nxn_os_gap(NXN_OS_SP_S);
 
         ImGui::BeginChild("##tab_scroll", ImVec2(0, 0), false);
 
         if (active_tab == 0) {
-            /* === TAB 0: OVERVIEW — PATH, VERIFICATION, YURI MODE & LANGUAGE (NO SCREENSHOT GALLERY) === */
-            nxn_os_section_label(nxn_tr("sec.game_path"), tok);
-            nxn_os_card_begin("path_card", tok);
-            {
-                nxn_os_row_begin();
-                if (nxn_os_button(nxn_tr("btn.browse"), NXN_OS_BTN_PRIMARY, tok)) {
-                    choose_game();
-                }
-                if (nxn_os_button(nxn_tr("btn.verify"), NXN_OS_BTN_DEFAULT, tok)) {
-                    verify_game_dir(cfg->game_dir, vs);
-                    scan_mods(cfg->game_dir);
-                }
-                nxn_os_row_end();
+            /* === TAB 0: OVERVIEW. Two columns: quick settings (FPS first) and the game folder. File checks live in the Files tab. === */
+            nx_grid_begin("##ov_grid", 2);
 
+            nx_grid_next();
+            nxn_os_section_label(nxn_tr("sec.quick"), tok);
+            nxn_os_card_begin("quick_card", tok);
+            {
+                bool sfps = cfg->show_fps != 0;
+                if (nx_fps_row(&sfps, nxn_tr("lbl.show_fps"), nxn_tr("lbl.show_fps_hint"))) {
+                    cfg->show_fps = sfps ? 1 : 0;
+                    config_save(cfg);
+                }
                 nxn_os_separator(tok);
-                if (cfg->game_dir[0]) {
-                    nxn_os_kv_row(nxn_tr("lbl.game_dir"), cfg->game_dir, tok, false);
-                } else {
-                    nxn_os_text_wrapped(NXN_OS_TEXT_CAPTION, nxn_tr("lbl.no_dir"));
-                }
 
-                nxn_os_gap(NXN_OS_SP_XS);
-                nxn_os_kv_row("gamemd.exe", nxn_tr(!vs.has_gamemd ? "file.missing"
-                    : vs.stamp_ok ? "file.found" : "status.unsupported"), tok, false);
-                nxn_os_kv_row("ra2.mix", nxn_tr(vs.has_ra2_mix ? "file.found" : "file.missing"), tok, false);
-                nxn_os_kv_row("ra2md.mix", nxn_tr(vs.has_ra2md_mix ? "file.found" : "file.missing"), tok, false);
-
-                nxn_os_gap(NXN_OS_SP_XS);
-                nxn_os_text_colored(NXN_OS_TEXT_BODY,
-                                    nxn_tr(vs.ok ? "lbl.verify_ok" : vs.has_gamemd && !vs.stamp_ok
-                                        ? "lbl.verify_unsupported" : "lbl.verify_fail"),
-                                    vs.ok ? k_green : k_red);
-            }
-            nxn_os_card_end();
-
-            nxn_os_gap(NXN_OS_SP_S);
-            nxn_os_section_label(nxn_tr("sec.launch_mode"), tok);
-            nxn_os_card_begin("mode_card", tok);
-            {
                 const char *yuri_opts[2] = { nxn_tr("opt.yuri_unmodded"), nxn_tr("opt.yuri_modded") };
                 int ym = cfg->yuri_modded ? 1 : 0;
                 nxn_os_labeled(nxn_tr("lbl.yuri_mode"), [&]() {
@@ -955,7 +901,6 @@ extern "C" int ra2_run_launcher(ra2_config_t *cfg) {
                     }
                 }
 
-                nxn_os_separator(tok);
                 const char *lang_opts[4] = {
                     nxn_tr("opt.lang_auto"),
                     nxn_tr("opt.lang_en"),
@@ -975,6 +920,36 @@ extern "C" int ra2_run_launcher(ra2_config_t *cfg) {
                 nxn_os_text_wrapped(NXN_OS_TEXT_CAPTION, nxn_tr("lbl.ui_lang_note"));
             }
             nxn_os_card_end();
+
+            nx_grid_next();
+            nxn_os_section_label(nxn_tr("sec.game_folder"), tok);
+            nxn_os_card_begin("path_card", tok);
+            {
+                nxn_os_row_begin();
+                if (nxn_os_button(nxn_tr("btn.browse"), NXN_OS_BTN_PRIMARY, tok)) {
+                    choose_game();
+                }
+                if (nxn_os_button(nxn_tr("btn.verify"), NXN_OS_BTN_DEFAULT, tok)) {
+                    verify_game_dir(cfg->game_dir, vs);
+                    scan_mods(cfg->game_dir);
+                }
+                nxn_os_row_end();
+                nxn_os_separator(tok);
+                if (cfg->game_dir[0]) {
+                    nxn_os_text_wrapped(NXN_OS_TEXT_CAPTION, cfg->game_dir);
+                } else {
+                    nxn_os_text_wrapped(NXN_OS_TEXT_CAPTION, nxn_tr("lbl.no_dir"));
+                }
+                nxn_os_gap(NXN_OS_SP_XS);
+                nxn_os_text_colored(NXN_OS_TEXT_BODY,
+                                    nxn_tr(vs.ok ? "lbl.verify_ok" : vs.has_gamemd && !vs.stamp_ok
+                                        ? "lbl.verify_unsupported" : "lbl.verify_fail"),
+                                    vs.ok ? k_green : k_red);
+                nxn_os_text_wrapped(NXN_OS_TEXT_CAPTION, nxn_tr("lbl.files_hint"));
+            }
+            nxn_os_card_end();
+
+            nx_grid_end();
 
         } else if (active_tab == 1) {
             /* === TAB 1: VIDEO, AUTO DOCK RESOLUTION & PERFORMANCE === */
@@ -1027,11 +1002,6 @@ extern "C" int ra2_run_launcher(ra2_config_t *cfg) {
                 char resolution[48];
                 snprintf(resolution, sizeof(resolution), "%d × %d", cfg->res_w, cfg->res_h);
                 nxn_os_kv_row(nxn_tr("lbl.current_resolution"), resolution, tok, false);
-                bool sfps = cfg->show_fps != 0;
-                if (nxn_os_switch_row(nxn_tr("lbl.show_fps"), &sfps)) {
-                    cfg->show_fps = sfps ? 1 : 0;
-                    config_save(cfg);
-                }
                 nxn_os_separator(tok);
 
                 ImGui::BeginDisabled(cfg->stable_profile != 0);
@@ -1183,6 +1153,8 @@ extern "C" int ra2_run_launcher(ra2_config_t *cfg) {
                     if (nxn_os_switch_row(nxn_tr("lbl.longpress_rc"), &b_lp)) { cfg->longpress_rc = b_lp; config_save(cfg); }
                     bool b_2t = cfg->twofinger_rc != 0;
                     if (nxn_os_switch_row(nxn_tr("lbl.twofinger_rc"), &b_2t)) { cfg->twofinger_rc = b_2t; config_save(cfg); }
+                    bool b_tw = cfg->touch_wheel != 0;
+                    if (nxn_os_switch_row(nxn_tr("lbl.touch_wheel"), &b_tw)) { cfg->touch_wheel = b_tw; config_save(cfg); }
                 }
                 nxn_os_card_end();
             } else {
@@ -1219,7 +1191,43 @@ extern "C" int ra2_run_launcher(ra2_config_t *cfg) {
             nxn_os_card_end();
 
         } else if (active_tab == 3) {
-            /* === TAB 3: LOGS & DIAGNOSTICS === */
+            /* === TAB 3: HOW TO PLAY (generated from the port's experience block) ===
+             * One card per control scheme, one line per action. The text comes from lang keys
+             * the Studio generates, so a new gesture or a changed binding shows up here
+             * without touching this code. */
+            nx_howto_draw(tok, cfg->touch_wheel != 0);
+
+        } else if (active_tab == 4) {
+            /* === TAB 4: FILES. The per-file check result, two columns, out of the overview. === */
+            nxn_os_section_label(nxn_tr("sec.game_path"), tok);
+            nx_grid_begin("##files_grid", 2);
+            nx_grid_next();
+            nxn_os_card_begin("files_core", tok);
+            {
+                nxn_os_kv_row("gamemd.exe", nxn_tr(!vs.has_gamemd ? "file.missing"
+                    : vs.stamp_ok ? "file.found" : "status.unsupported"), tok, false);
+                nxn_os_kv_row("ra2.mix", nxn_tr(vs.has_ra2_mix ? "file.found" : "file.missing"), tok, false);
+                nxn_os_kv_row("ra2md.mix", nxn_tr(vs.has_ra2md_mix ? "file.found" : "file.missing"), tok, false);
+            }
+            nxn_os_card_end();
+            nx_grid_next();
+            nxn_os_card_begin("files_result", tok);
+            {
+                if (cfg->game_dir[0]) nxn_os_kv_row(nxn_tr("lbl.game_dir"), cfg->game_dir, tok, false);
+                nxn_os_text_colored(NXN_OS_TEXT_BODY,
+                                    nxn_tr(vs.ok ? "lbl.verify_ok" : vs.has_gamemd && !vs.stamp_ok
+                                        ? "lbl.verify_unsupported" : "lbl.verify_fail"),
+                                    vs.ok ? k_green : k_red);
+                if (nxn_os_button(nxn_tr("btn.verify"), NXN_OS_BTN_DEFAULT, tok)) {
+                    verify_game_dir(cfg->game_dir, vs);
+                    scan_mods(cfg->game_dir);
+                }
+            }
+            nxn_os_card_end();
+            nx_grid_end();
+
+        } else if (active_tab == 5) {
+            /* === TAB 4: LOGS & DIAGNOSTICS === */
             nxn_os_section_label(nxn_tr("sec.logs"), tok);
             nxn_os_card_begin("logs_card", tok);
             {

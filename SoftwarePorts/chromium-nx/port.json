@@ -1,0 +1,26 @@
+{
+  "slug": "chromium-nx",
+  "storeCategory": "utilities",
+  "publicFiles": [
+    "app.json",
+    "chromium-nx.nxvmod",
+    "icon.png",
+    "LICENSE",
+    "NOTICE.md",
+    "lang/en.json",
+    "lang/tr.json",
+    "lang/de.json",
+    "lang/es.json",
+    "lang/fr.json",
+    "lang/ja.json",
+    "lang/ko.json",
+    "lang/zh.json"
+  ],
+  "localData": [],
+  "release": {
+    "status": "blocked",
+    "reasons": [
+      "Feasibility and release acceptance are pending."
+    ]
+  }
+}

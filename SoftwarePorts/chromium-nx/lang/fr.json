@@ -1,0 +1,6 @@
+{
+  "app_name": "Chromium NX",
+  "desc": "Navigateur web Chromium sur Nintendo Switch via Linux Kernel Library (LKL). Démarrage direct.",
+  "loading": "Démarrage de Chromium...",
+  "quit": "Quitter"
+}

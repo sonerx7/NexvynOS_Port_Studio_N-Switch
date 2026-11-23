@@ -1,17 +1,17 @@
-# Dağıtım kaydı
+# Distribution record
 
 <!-- PORT_STUDIO_TEMPLATE -->
 
-| Dosya veya grup | Kaynak ve sürüm | Lisans/izin ve kanıt | App Market / kişisel / harici | Gerekli atıf veya yükümlülük |
+| File or group | Source and version | License or permission and evidence | App Market, personal, or external | Attribution or obligation |
 | --- | --- | --- | --- | --- |
-| Native modül ve upstream kod | | | | |
-| Varlıklar, çeviri ve yamalar | | | | |
-| Mağaza ikonu ve ekran görüntüleri | | | | |
-| Kullanıcı tarafından sağlanan veri | | | | |
+| Native module and upstream code | | | | |
+| Assets, translations, and patches | | | | |
+| Store icon and screenshots | | | | |
+| User-supplied data | | | | |
 
-## Harici veri
+## External data
 
-- Desteklenen yasal kurulumdan seçilecek klasörler ve temel dosyalar
-- Sürüm doğrulaması, varsa veri sağlama veya yama uygulama yöntemi
-- Uygulamanın paketlenmiş ve harici veriyi hangi sırayla aradığı
-- Kişisel verinin mağazaya karışmadığını gösteren paket kontrolü
+- Required files and folders in the supported user-owned installation
+- Version validation and applicable data or patch workflow
+- Search order for bundled and external data
+- Package check confirming personal data is absent from the store payload

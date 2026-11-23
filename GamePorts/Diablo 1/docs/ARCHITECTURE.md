@@ -1,6 +1,6 @@
-# Diablo 1 (DevilutionX) Port Mimarisi
+# Diablo 1 (DevilutionX) Port Architecture
 
-## Katman Şeması
+## Layer Diagram
 
 ```
 +-------------------------------------------------------+
@@ -18,7 +18,7 @@
 +-------------------------------------------------------+
 ```
 
-## Derleme Parametreleri
+## Build Parameters
 ```bash
 cmake -B build_nx -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \

@@ -1,22 +1,22 @@
-# Nexvyn Port SDK Rehberi
+# Nexvyn Port SDK Guide
 
-Bu belge mevcut port yardımcı başlığını anlatır. Yeni portlarda OS giriş sahipliği, sistem diyalogları ve kalıcı uygulama verisi için [public SDK’nın native port sözleşmesini](../nexvyn_sdk/Guides/PORT_AND_LAUNCHER.md) kullan.
+This document describes the current port helper header. For new ports, use the [public SDK's native port contract](../nexvyn_sdk/Guides/PORT_AND_LAUNCHER.md) for OS input ownership, system dialogs and persistent application data.
 
-Nexvyn Port SDK (`nexvyn_port_core`), klasik PC oyunlarını ve yazılımlarını Nintendo Switch (libnx) ve modern platformlara taşırken karşılaşılan ortak zorlukları standartlaştıran C/C++ kütüphanesidir.
+The Nexvyn Port SDK (`nexvyn_port_core`) is a C/C++ library that standardizes the common problems met when porting classic PC games and software to the Nintendo Switch (libnx) and modern platforms.
 
-## Çözülen Temel Sorunlar
+## Core Problems Solved
 
-1. **Giriş Dönüşümü (Input Translation):**
-   - Fare ve klavye gerektiren PC oyunlarına analog stick ile imleç yönetimi (`Virtual Mouse`).
-   - Dokunmatik ekran girdilerini sol/sağ fare tıklamalarına ve sürüklemeye çevirme (`Touch to Mouse`).
-   - Sanal klavye veya Switch yazılım klavyesi (swkbd) entegrasyonu.
+1. **Input Translation:**
+   - Cursor control with the analog stick for PC games that need a mouse and keyboard (`Virtual Mouse`).
+   - Converting touchscreen input to left/right mouse clicks and dragging (`Touch to Mouse`).
+   - Integration of a virtual keyboard or the Switch software keyboard (swkbd).
 
-2. **Görüntü ve Çözünürlük Ölçekleme:**
-   - 640x480, 800x600 gibi sabit eski çözünürlüklerin Switch elde modu (720p) ve dock modu (1080p) için aspect-ratio korunarak ölçeklenmesi.
+2. **Display and Resolution Scaling:**
+   - Scaling fixed legacy resolutions such as 640x480 and 800x600 to Switch handheld mode (720p) and docked mode (1080p) while preserving the aspect ratio.
 
-3. **Dosya Yolu ve Depolama Standartları:**
-   - Dosya yollarının büyük/küçük harf duyarsızlığı (Case-sensitivity) emülasyonu.
-   - Save dosyalarının `sdmc:/switch/nexvyn/<app_id>/saves` altında güvenli saklanması.
+3. **File Path and Storage Standards:**
+   - Emulation of case-insensitive file paths (case-sensitivity handling).
+   - Safe storage of save files under `sdmc:/switch/nexvyn/<app_id>/saves`.
 
-4. **Ses ve Senkronizasyon:**
-   - Eski DirectSound / WinMM ses çağrılarının SDL2_mixer veya libnx hardware audio pipeline'ına yönlendirilmesi.
+4. **Audio and Synchronization:**
+   - Redirecting legacy DirectSound / WinMM audio calls to SDL2_mixer or the libnx hardware audio pipeline.

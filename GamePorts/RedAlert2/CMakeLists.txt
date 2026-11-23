@@ -86,6 +86,8 @@ if(DEFINED NEXVYN_KIT OR DEFINED SWITCH OR CMAKE_SYSTEM_NAME MATCHES "Generic|Ni
 
   target_include_directories(ra2 PRIVATE
     src/nx
+    generated
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../_PortStudioMain/portkit
     src/linux
     src/runtime
     ${GEN_DIR}

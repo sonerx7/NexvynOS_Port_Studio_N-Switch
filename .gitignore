@@ -2,7 +2,7 @@
 # Nexvyn Port Studio - Public Git Ignore
 # ==============================================================================
 
-# Büyük Paketler ve Arşivler (GitHub 100MB Sınırı)
+# Large packages and archives (GitHub 100 MB limit)
 *.zip
 *.7z
 *.rar
@@ -12,7 +12,7 @@
 *.bin
 *.vhd
 
-# Switch & Binary Çıktıları
+# Switch and binary outputs
 *.nro
 *.elf
 *.nacp
@@ -30,7 +30,7 @@
 *.obj
 *.a
 
-# Derleme, Recomp ve Ara Klasörler
+# Build, recompilation and intermediate folders
 build/
 build_*/
 bin/
@@ -50,10 +50,10 @@ src/recomp/gen_game/
 /**/work/
 /**/game/
 
-# Yerel Başlatıcı (Web harici)
+# Local launcher (non-web)
 /start.bat
 
-# Telifli / Büyük Oyun Assetleri
+# Copyrighted / large game assets
 *.mix
 *.mpq
 *.wad
@@ -64,7 +64,7 @@ src/recomp/gen_game/
 *.smk
 *.csf
 
-# Emülatör & IDE & Sistem Kalıntıları
+# Emulator, IDE and OS leftovers
 .emulator_profile/
 .vscode/
 .idea/
@@ -75,18 +75,21 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
-# Geçici / Log Dosyaları
+# Temporary and log files
 *.log
 *.tmp
 _temp*
 _move_temp*
 
-# Stüdyo kişisel verileri ve SDK yedekleri
+# Studio personal data and SDK backups
 _LocalData/
 /_PortStudioMain/_SdkBackups/
 /_PortStudioMain/_SdkCandidates/
 __pycache__/
 .port-studio-*/
+# Upstream game template and sample archives tracked with the public SDK
+!/_PortStudioMain/nexvyn_sdk/Languages/c/native-kit/sdk/native/templates/game/
+!/_PortStudioMain/nexvyn_sdk/Samples/**/*.zip
 /_RealesedBuilds/*
 !/_RealesedBuilds/README.md
 !/_RealesedBuilds/game/
@@ -95,3 +98,16 @@ __pycache__/
 /_RealesedBuilds/software/*
 !/_RealesedBuilds/game/.gitkeep
 !/_RealesedBuilds/software/.gitkeep
+
+# Local scratch
+_scratch/
+scratch_*/
+scratch_*.py
+*.s
+extracted_*.npdm
+_PortStudioMain/_temp_nexvyn_repo/
+_PortStudioMain/_SdkCandidates/
+_PortStudioMain/_SdkBackups/
+_PortStudioMain/_EmulatorCache/
+.emulator_profile/
+.emulator_profile.lock

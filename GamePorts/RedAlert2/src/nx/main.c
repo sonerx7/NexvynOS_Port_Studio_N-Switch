@@ -233,6 +233,20 @@ static touch_slot_t g_fingers[8];
 static int g_2f_active = 0;
 static int64_t g_2f_id0 = -1, g_2f_id1 = -1;
 static float g_2f_last_cx = 0.0f, g_2f_last_cy = 0.0f;
+/* Two fingers become one of three gestures and stay that gesture until a finger lifts:
+ * pan (camera), pinch (mouse wheel: zoom) or scroll (mouse wheel: lists and the sidebar).
+ * Off unless the player turns on "Touch Mouse Wheel"; the game's reaction to the wheel is untested. */
+enum { G2_UNDECIDED = 0, G2_PAN, G2_PINCH, G2_SCROLL };
+static int g_2f_mode = G2_UNDECIDED;
+static float g_2f_last_dist = 0.0f, g_2f_start_cx = 0.0f;
+static float g_2f_wheel_acc = 0.0f;
+/* Classified from the net change since the two fingers landed, and only once both fingers have moved:
+ * finger events arrive one finger at a time, so a parallel drag looks like a pinch until the second finger follows. */
+static float g_2f_start_cy = 0.0f, g_2f_start_dist = 0.0f;
+static float g_2f_ax0 = 0.0f, g_2f_ay0 = 0.0f, g_2f_bx0 = 0.0f, g_2f_by0 = 0.0f;
+#define G2_DECIDE_AT   0.03f   /* finger travel (fraction of the screen) before the gesture is chosen */
+#define G2_NOTCH       0.05f   /* finger travel per wheel notch */
+#define G2_SIDEBAR_X   0.80f   /* two-finger drags that start right of this scroll instead of panning */
 
 static void set_pan_key(int dir, int down) {
     static const uint32_t vk[4]   = { VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN };
@@ -605,7 +619,51 @@ static int on_finger_hook(int type, int64_t finger_id, float x, float y, float d
             g_2f_id1 = g_fingers[b].id;
             g_2f_last_cx = cx;
             g_2f_last_cy = cy;
+            g_2f_mode = G2_UNDECIDED;
+            g_2f_start_cx = cx;
+            g_2f_last_dist = hypotf(g_fingers[a].x - g_fingers[b].x, g_fingers[a].y - g_fingers[b].y);
+            g_2f_wheel_acc = 0.0f;
+            g_2f_start_cy = cy;
+            g_2f_start_dist = g_2f_last_dist;
+            g_2f_ax0 = g_fingers[a].x; g_2f_ay0 = g_fingers[a].y;
+            g_2f_bx0 = g_fingers[b].x; g_2f_by0 = g_fingers[b].y;
         } else {
+            if (g_cfg.touch_wheel) {
+                float dist = hypotf(g_fingers[a].x - g_fingers[b].x, g_fingers[a].y - g_fingers[b].y);
+                float dd = dist - g_2f_last_dist;
+                float mvx = cx - g_2f_last_cx, mvy = cy - g_2f_last_cy;
+                g_2f_last_dist = dist;
+                if (g_2f_mode == G2_UNDECIDED) {
+                    float net_dd = dist - g_2f_start_dist;
+                    float net_dx = cx - g_2f_start_cx, net_dy = cy - g_2f_start_cy;
+                    float net_mv = hypotf(net_dx, net_dy);
+                    float a_moved = hypotf(g_fingers[a].x - g_2f_ax0, g_fingers[a].y - g_2f_ay0);
+                    float b_moved = hypotf(g_fingers[b].x - g_2f_bx0, g_fingers[b].y - g_2f_by0);
+                    float travel = fabsf(net_dd) + net_mv;
+                    int both = a_moved > G2_DECIDE_AT * 0.5f && b_moved > G2_DECIDE_AT * 0.5f;
+                    if ((both && travel > G2_DECIDE_AT) || travel > 3.0f * G2_DECIDE_AT) {
+                        if (fabsf(net_dd) > 1.5f * net_mv) g_2f_mode = G2_PINCH;
+                        else if (g_2f_start_cx > G2_SIDEBAR_X && fabsf(net_dy) > 0.5f * net_mv) g_2f_mode = G2_SCROLL;
+                        else g_2f_mode = G2_PAN;
+                        ra2_log_append("touch gesture: %s", g_2f_mode == G2_PINCH ? "pinch" : g_2f_mode == G2_SCROLL ? "scroll" : "pan");
+                    }
+                }
+                if (g_2f_mode == G2_PINCH || g_2f_mode == G2_SCROLL) {
+                    /* spread = zoom in = wheel away from the user (+); a finger moving down scrolls up (+) */
+                    /* Yuri's Revenge ignores the wheel for zoom (checked in the emulator), so a pinch is swallowed, not sent. */
+                    g_2f_wheel_acc += (g_2f_mode == G2_PINCH) ? 0.0f : mvy;
+                    while (fabsf(g_2f_wheel_acc) >= G2_NOTCH) {
+                        int notch = g_2f_wheel_acc > 0.0f ? 120 : -120;
+                        hle_input_wheel(notch);
+                        ra2_log_append("touch wheel %+d", notch);
+                        g_2f_wheel_acc -= (notch > 0 ? G2_NOTCH : -G2_NOTCH);
+                    }
+                    g_2f_last_cx = cx;
+                    g_2f_last_cy = cy;
+                    for (int i = 0; i < 4; i++) g_touch_pan_want[i] = 0;
+                    return 1;
+                }
+            }
             float dcx = cx - g_2f_last_cx;
             float dcy = cy - g_2f_last_cy;
             float sens = g_cfg.touch_pan_sens > 0.1f ? g_cfg.touch_pan_sens : 1.0f;
@@ -626,6 +684,7 @@ static int on_finger_hook(int type, int64_t finger_id, float x, float y, float d
     } else {
         if (g_2f_active) {
             g_2f_active = 0;
+            g_2f_mode = G2_UNDECIDED;
             for (int i = 0; i < 4; i++) g_touch_pan_want[i] = 0;
         }
     }

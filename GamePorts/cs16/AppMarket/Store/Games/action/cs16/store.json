@@ -2,7 +2,6 @@
   "kind": "port",
   "category": "action",
   "features": [
-    "offline",
     "controller",
     "touch",
     "keyboard"
@@ -14,27 +13,26 @@
     "shooter",
     "valve"
   ],
-  "players": "1-32",
   "age": "teen",
   "subtitle": {
-    "en": "Tactical FPS for Nexvyn OS",
-    "tr": "Nexvyn OS için Taktiksel FPS",
-    "de": "Taktischer Ego-Shooter für Nexvyn OS",
-    "es": "Shooter táctico para Nexvyn OS",
-    "fr": "Jeu de tir tactique pour Nexvyn OS",
-    "ja": "Nexvyn OS向けタクティカルFPS",
-    "ko": "Nexvyn OS용 택티컬 FPS 게임",
-    "zh": "适用于 Nexvyn OS 的战术射击游戏"
+    "en": "Launcher preview",
+    "tr": "Başlatıcı önizlemesi",
+    "de": "Launcher-Vorschau",
+    "es": "Vista previa del lanzador",
+    "fr": "Aperçu du lanceur",
+    "ja": "ランチャーのプレビュー",
+    "ko": "런처 미리 보기",
+    "zh": "启动器预览"
   },
   "description": {
-    "en": "Counter-Strike 1.6 launcher preview and game-data validator for Nexvyn OS.",
-    "tr": "Nexvyn OS için Counter-Strike 1.6 başlatıcı önizlemesi ve oyun dosyası doğrulayıcısı.",
-    "de": "Counter-Strike-1.6-Launcher-Vorschau und Datenprüfung für Nexvyn OS.",
-    "es": "Vista previa del lanzador y verificador de datos de Counter-Strike 1.6 para Nexvyn OS.",
-    "fr": "Aperçu du lanceur et vérification des données de Counter-Strike 1.6 pour Nexvyn OS.",
-    "ja": "Nexvyn OS 向け Counter-Strike 1.6 ランチャーのプレビューとゲームデータの検証。",
-    "ko": "Nexvyn OS용 카운터 스트라이크 1.6 런처 미리 보기와 게임 데이터 검증 도구입니다.",
-    "zh": "适用于 Nexvyn OS 的反恐精英 1.6 启动器预览和游戏数据验证工具。"
+    "en": "Preview for selecting a Counter-Strike 1.6 folder and checking its WAD headers.",
+    "tr": "Counter-Strike 1.6 klasörünü seçmek ve WAD başlıklarını denetlemek için önizleme.",
+    "de": "Vorschau zur Ordnerauswahl und Prüfung der WAD-Dateiköpfe für Counter-Strike 1.6.",
+    "es": "Vista previa para seleccionar la carpeta de Counter-Strike 1.6 y comprobar sus cabeceras WAD.",
+    "fr": "Aperçu permettant de sélectionner le dossier de Counter-Strike 1.6 et de vérifier ses en-têtes WAD.",
+    "ja": "Counter-Strike 1.6 のフォルダーを選択し、WAD ヘッダーを確認するプレビューです。",
+    "ko": "Counter-Strike 1.6 폴더를 선택하고 WAD 헤더를 검사하는 미리 보기입니다.",
+    "zh": "用于选择《反恐精英 1.6》文件夹并检查 WAD 文件头的预览版。"
   },
   "shots": [
     [

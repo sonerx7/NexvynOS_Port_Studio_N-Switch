@@ -1,17 +1,17 @@
-# Port Market sürüm geçmişi
+# Port Market changelog
 
 ## 0.2.1
 
-- Yerel kitaplıkta oyun ve yazılım başına alt klasörleri açar. Eski düz katalogları da okuyabilir.
+- Opens per-game and per-software subfolders in the local library. Can still read the old flat catalogs.
 
 ## 0.2.0
 
-- Kullanıcının kaydettiği Internet Archive öğelerinden sürüm listesini doğrudan yeniler.
-- SDK ağ indirmesi, ilerleme, dosya boyutu kontrolü ve sistem paket inceleme ekranı.
-- SDK JavaScript çalışma zamanına geçildi. Kişisel SD klasörü desteği sürüyor.
+- Refreshes the version list directly from the Internet Archive items the user has saved.
+- SDK network download, progress, file size check and a system package inspection screen.
+- Moved to the SDK JavaScript runtime. Personal SD folder support continues.
 
 ## 0.1.0
 
-- Native beta. SD üzerindeki kişisel kitaplıkta oyun ve yazılım filtreleri, sürüm, boyut ve SHA-256 bilgisi.
-- Yerel paket yolu ve dağıtım izni olan Internet Archive paketleri için bağlantı.
-- SDK teması, yeniden boyutlandırma, gamepad/klavye/dokunmatik ve sekiz dil.
+- Native beta. Game and software filters, version, size and SHA-256 information in the personal library on the SD card.
+- Link to the local package path and to Internet Archive packages that have distribution permission.
+- SDK theme, resizing, gamepad/keyboard/touch and eight languages.

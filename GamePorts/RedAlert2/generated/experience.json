@@ -1,0 +1,234 @@
+{
+  "schema": 1,
+  "profile": "rts",
+  "description": "Real-time strategy: pointer selection, camera pan/zoom, many commands.",
+  "input": {
+    "modes": [
+      "auto",
+      "gamepad",
+      "touch",
+      "kbm"
+    ],
+    "defaultMode": "auto",
+    "actions": {
+      "select": {
+        "gamepad": [
+          "a"
+        ],
+        "touch": [
+          "tap"
+        ],
+        "kbm": [
+          "mouse1"
+        ]
+      },
+      "command": {
+        "gamepad": [
+          "x"
+        ],
+        "touch": [
+          "long_press"
+        ],
+        "kbm": [
+          "mouse2"
+        ]
+      },
+      "box_select": {
+        "gamepad": [
+          "zr+stick"
+        ],
+        "touch": [
+          "one_finger_drag"
+        ],
+        "kbm": [
+          "mouse1_drag"
+        ]
+      },
+      "cancel": {
+        "gamepad": [
+          "b"
+        ],
+        "touch": [
+          "two_finger_tap"
+        ],
+        "kbm": [
+          "escape"
+        ]
+      },
+      "camera_pan": {
+        "gamepad": [
+          "rstick"
+        ],
+        "touch": [
+          "two_finger_pan"
+        ],
+        "kbm": [
+          "edge_scroll",
+          "wasd"
+        ]
+      },
+      "menu": {
+        "gamepad": [
+          "plus"
+        ],
+        "touch": [
+          "menu_button"
+        ],
+        "kbm": [
+          "f10"
+        ]
+      },
+      "pointer_move": {
+        "gamepad": [
+          "lstick"
+        ],
+        "touch": [
+          "touch_position"
+        ],
+        "kbm": [
+          "mouse_move"
+        ]
+      }
+    },
+    "gestures": {
+      "tap": "select",
+      "long_press": "command",
+      "one_finger_drag": "box_select",
+      "two_finger_pan": "camera_pan",
+      "two_finger_tap": "command"
+    },
+    "gamepad": {
+      "deadzone": 0.15,
+      "sensitivity": 1.0,
+      "invertY": false,
+      "rumble": true
+    },
+    "touch": {
+      "minTargetPx": 44,
+      "multitouch": true,
+      "panSensitivity": {
+        "default": 1.0,
+        "min": 0.5,
+        "max": 2.0
+      },
+      "invertPan": true
+    },
+    "zoom": {
+      "method": "none",
+      "min": 1.0,
+      "max": 1.0,
+      "step": 0.25,
+      "defaultOn": false,
+      "evidence": "Emulator, 2026-11-23, skirmish map: injected pinch-out and pinch-in produced touch wheel +120 and -120 events through hle_input_wheel, and the camera did not change between ra2_map_start.png and ra2_map_pinch_in.png. Yuri's Revenge ignores the mouse wheel for zoom. Port-side magnification (method present) is not built.",
+      "order": [
+        "native",
+        "wheel",
+        "keys",
+        "present"
+      ]
+    },
+    "edgeScroll": {
+      "default": true,
+      "rate": {
+        "default": 4,
+        "min": 1,
+        "max": 6
+      }
+    },
+    "engineFacts": "Verified in port source (src/nx/main.c, launcher.cpp): two-finger drag pans the camera, long press and two-finger tap send a right click, nothing handles pinch. The mouse wheel is only forwarded as WM_MOUSEWHEEL. Not yet tested in the running game: whether Yuri's Revenge reacts to the wheel. Until tested, pinch uses the present method (port-side magnification).",
+    "scroll": {
+      "twoFingerDragInSidebar": "wheel",
+      "note": "A two-finger drag that starts in the right 20% of the screen sends the wheel (lists and the sidebar); elsewhere it pans the camera."
+    },
+    "unsupported": [
+      "camera_zoom"
+    ]
+  },
+  "performance": {
+    "handheld": {
+      "renderScale": 0.75,
+      "resolution": [
+        1280,
+        720
+      ],
+      "fpsCap": 30,
+      "msaa": 0,
+      "shadows": "low"
+    },
+    "docked": {
+      "renderScale": 1.0,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "fpsCap": 30,
+      "msaa": 0,
+      "shadows": "medium"
+    },
+    "auto": true,
+    "autoDockDefault": false,
+    "notes": "Frame rate on device not yet measured. Preset caps apply until measured. Values mirror src/nx/launcher.cpp defaults."
+  },
+  "launcher": {
+    "primaryAction": "play",
+    "sections": [
+      "data",
+      "video",
+      "controls",
+      "mods",
+      "help"
+    ],
+    "remember": [
+      "dataPath",
+      "mode",
+      "profile"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "select_and_command",
+      "title": "Select a unit, then order it to move",
+      "steps": {
+        "gamepad": "Move pointer with left stick, A to select, X to command",
+        "touch": "Tap the unit, long-press the ground",
+        "kbm": "Left click the unit, right click the ground"
+      }
+    },
+    {
+      "id": "camera",
+      "title": "Move the camera across the map",
+      "steps": {
+        "gamepad": "Right stick",
+        "touch": "Drag with two fingers",
+        "kbm": "Mouse at screen edge or W A S D"
+      }
+    },
+    {
+      "id": "zoom",
+      "title": "Zoom in and out (when zoom is enabled)",
+      "steps": {
+        "touch": "Pinch",
+        "kbm": "Mouse wheel",
+        "gamepad": "ZL and ZR"
+      }
+    },
+    {
+      "id": "box_select",
+      "title": "Select several units",
+      "steps": {
+        "gamepad": "Hold ZR and move the stick",
+        "touch": "Drag with one finger on empty ground",
+        "kbm": "Drag with left button"
+      }
+    },
+    {
+      "id": "menu",
+      "title": "Open the menu and cancel with the same device",
+      "steps": {
+        "gamepad": "+ then B",
+        "touch": "Menu button then back",
+        "kbm": "F10 then Esc"
+      }
+    }
+  ]
+}

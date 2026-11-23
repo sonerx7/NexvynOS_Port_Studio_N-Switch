@@ -1,0 +1,57 @@
+{
+  "kind": "port",
+  "category": "strategy",
+  "features": [
+    "controller",
+    "touch",
+    "keyboard"
+  ],
+  "tags": [
+    "strategy",
+    "rts",
+    "age-of-empires",
+    "historical",
+    "ensemble"
+  ],
+  "age": "teen",
+  "subtitle": {
+    "en": "Launcher preview & RTS experience",
+    "tr": "Başlatıcı önizlemesi ve RTS kontrolleri",
+    "de": "Launcher-Vorschau und RTS-Steuerung",
+    "es": "Vista previa del lanzador y experiencia RTS",
+    "fr": "Aperçu du lanceur et expérience RTS",
+    "ja": "ランチャープレビューとRTS操作",
+    "ko": "런처 미리보기 및 RTS 조작",
+    "zh": "启动器预览与 RTS 体验"
+  },
+  "description": {
+    "en": "Native launcher preview, DRS/DAT validator, and RTS control profiles for Age of Empires II PC.",
+    "tr": "Age of Empires II PC için native başlatıcı önizlemesi, DRS/DAT dosya denetimi ve RTS kontrol profilleri.",
+    "de": "Nativer Launcher-Vorschau, DRS/DAT-Dateiprüfung und RTS-Steuerungsprofile für Age of Empires II PC.",
+    "es": "Vista previa del lanzador nativo, validador de DRS/DAT y perfiles de control RTS para Age of Empires II PC.",
+    "fr": "Aperçu du lanceur natif, validateur DRS/DAT et profils de contrôle RTS pour Age of Empires II PC.",
+    "ja": "Age of Empires II PC向けネイティブランチャープレビュー、DRS/DAT検証、RTS操作プロファイル。",
+    "ko": "Age of Empires II PC용 네이티브 런처 미리보기, DRS/DAT 검증 및 RTS 조작 프로필.",
+    "zh": "适用于 Age of Empires II PC 的原生启动器预览、DRS/DAT 验证与 RTS 控制配置。"
+  },
+  "shots": [
+    [
+      "wait 2"
+    ],
+    [
+      "wclick 0.5 0.5",
+      "wait 2"
+    ],
+    [
+      "wclick 0.2 0.3",
+      "wait 1"
+    ],
+    [
+      "key escape",
+      "wait 1"
+    ],
+    [
+      "wait 1"
+    ]
+  ]
+}

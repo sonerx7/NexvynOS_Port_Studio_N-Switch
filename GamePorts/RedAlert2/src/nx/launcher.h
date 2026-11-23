@@ -55,6 +55,7 @@ typedef struct ra2_config_t {
     /* Touch tuning */
     int longpress_rc;        /* 1-finger long press -> right click */
     int twofinger_rc;        /* 2-finger tap -> right click */
+    int touch_wheel;         /* pinch and 2-finger drag in the sidebar zone -> mouse wheel (0 = off) */
     float touch_pan_sens;    /* 0.5 .. 2.0 */
     int touch_pan_invert;    /* 1=natural drag, 0=inverted */
 

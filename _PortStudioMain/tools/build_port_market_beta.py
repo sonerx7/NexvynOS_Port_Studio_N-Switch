@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port Market'i resmi App Market aracıyla yerel beta olarak paketler."""
+"""Package Port Market as a local beta with the official App Market tool."""
 
 import argparse
 import hashlib
@@ -25,17 +25,17 @@ def install_beta(item, candidate, checkout):
         current = read_json(path / "source/app.json")
         proposed = read_json(item / "source/app.json")
         if current["id"] != APP_ID:
-            raise ValueError("Beta yolunda farklı bir uygulama var.")
+            raise ValueError("A different app exists at the beta path.")
         if current["version"] == proposed["version"]:
             digest = hashlib.sha256((path / "port-market.nxvapp").read_bytes()).hexdigest()
             if digest == candidate["sha256"]:
-                print(f"Bu beta sürümü zaten kurulu: {path}")
+                print(f"This beta version is already installed: {path}")
                 return
         if tuple(map(int, current["version"].split("."))) >= tuple(map(int, proposed["version"].split("."))):
-            raise ValueError("Beta klasörü mevcut. Güncelleme için Port Market sürümünü artırın.")
+            raise ValueError("Beta folder already exists. Bump the Port Market version to update.")
     catalog = read_json(index)
     if catalog.get("schema") != 1 or not isinstance(catalog.get("apps"), list):
-        raise ValueError("Mağaza beta kataloğu beklenen biçimde değil.")
+        raise ValueError("Store beta catalog is not in the expected format.")
     catalog["apps"] = [entry for entry in catalog["apps"] if entry["id"] != APP_ID] + [candidate]
     catalog["apps"].sort(key=lambda entry: (
         entry["name"].get("en", "") if isinstance(entry["name"], dict) else entry["name"]
@@ -66,14 +66,14 @@ def build(checkout, snapshot, install, checker_checkout):
     report = sdk_report(snapshot)
     pin = read_json(PROJECT / "sdk.lock.json")
     if report["commit"] != pin["commit"]:
-        raise ValueError("Seçilen SDK snapshot'ı Port Market sdk.lock.json ile eşleşmiyor.")
+        raise ValueError("The selected SDK snapshot does not match the Port Market sdk.lock.json.")
     manifest = read_json(PROJECT / "app.json")
     if manifest["id"] != APP_ID:
-        raise ValueError("Port Market uygulama kimliği değişmiş.")
+        raise ValueError("The Port Market app ID has changed.")
     version = manifest["version"]
     for document in ("CHANGELOG.md", "KNOWN_ISSUES.md"):
         if f"\n## {version}\n" not in (PROJECT / document).read_text(encoding="utf-8"):
-            raise ValueError(f"Sürüm kaydı eksik: {document}")
+            raise ValueError(f"Missing release record: {document}")
     nxv, native, packer = sdk_paths(snapshot)
     module = PROJECT / manifest["main"]
     if manifest.get("runtime") == "native":
@@ -103,7 +103,7 @@ def build(checkout, snapshot, install, checker_checkout):
         catalog = read_json(stage / "Store/beta.json")
         entry, = catalog["apps"]
         if entry["id"] != APP_ID or entry["version"] != version or not entry["beta"]:
-            raise ValueError("Üretilen beta katalog girdisi beklenen sürüme ait değil.")
+            raise ValueError("The generated beta catalog entry does not belong to the expected version.")
         sdk_call(packer, "--verify", item / "port-market.nxvapp")
         output = PROJECT / "build" / f"beta-{version}"
         output.mkdir(exist_ok=True)
@@ -116,9 +116,9 @@ def build(checkout, snapshot, install, checker_checkout):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--checkout", type=Path, required=True, help="Resmi Store araçlarını içeren yerel Nexvyn OS checkout'u.")
+    parser.add_argument("--checkout", type=Path, required=True, help="Local Nexvyn OS checkout containing the official Store tools.")
     parser.add_argument("--sdk", type=Path, default=SDK)
-    parser.add_argument("--checker-checkout", type=Path, help="İsteğe bağlı tam OS kaynak ağacı ve runtime denetleyicileri.")
+    parser.add_argument("--checker-checkout", type=Path, help="Optional full OS source tree and runtime checkers.")
     parser.add_argument("--install-local", action="store_true", help="Beta girdisini yerel checkout'a ekle.")
     args = parser.parse_args()
     try:

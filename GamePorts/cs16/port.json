@@ -6,6 +6,7 @@
     "cs16.nxvmod",
     "icon.png",
     "LICENSE",
+    "LICENSE-IMGUI.txt",
     "NOTICE.md",
     "lang/de.json",
     "lang/en.json",
@@ -16,14 +17,39 @@
     "lang/tr.json",
     "lang/zh.json"
   ],
+  "build": {
+    "driver": "sdk",
+    "files": [
+      "CMakeLists.txt"
+    ],
+    "devkitFiles": [
+      "cmake/Switch.cmake",
+      "portlibs/switch/include/glad/glad.h",
+      "portlibs/switch/lib/libglad.a"
+    ]
+  },
+  "release": {
+    "status": "blocked",
+    "reasons": [
+      "Xash3D FWGS and CS16Client integration is pending. The current module is a launcher preview.",
+      "Gameplay on device and rights for store visuals still need verification."
+    ]
+  },
   "localData": [
     {
-      "from": "cstrike",
-      "to": "game/cstrike"
+      "from": "cstrike/cstrike.wad",
+      "to": "game/cstrike/cstrike.wad"
     },
     {
-      "from": "valve",
-      "to": "game/valve"
+      "from": "valve/halflife.wad",
+      "to": "game/valve/halflife.wad"
     }
-  ]
+  ],
+  "experience": {
+    "schema": 1,
+    "profile": "fps",
+    "input": {
+      "engineFacts": "Launcher preview only: the Xash3D FWGS engine is not integrated, so gameplay, the buy menu and weapon selection cannot be tested yet. generated/scenarios.md is the acceptance list for when the engine runs. Xash3D has its own touch and gamepad code upstream; check it before writing port-side input."
+    }
+  }
 }
