@@ -1,4 +1,11 @@
 {
-  "repository": "sonerx7/Nexvyn-OS-NX",
-  "commit": "7c6a0bbd2d4dd334f24a9fbbdc922904c9507fc6"
+  "repository": "owner-prerelease",
+  "commit": "224c6bca7951aa76ad973091ac1710b58b9a8d30",
+  "prerelease": {
+    "os": "1.4.0",
+    "sdk": "1.16",
+    "publicBase": "fac96c353229927110a0a6c607cf47934d6bec1e",
+    "method": "OS tools/release.py sync_sdk over the public repository HEAD",
+    "replaceWith": "port_studio.py sdk-update once the release is on GitHub"
+  }
 }
