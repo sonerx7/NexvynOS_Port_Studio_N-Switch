@@ -132,24 +132,161 @@ def sync(checkout, *, stage=False, record_active=False, verify_tools=True):
                 rename_snapshot(candidate, target)
                 print(f"SDK candidate ready: {target}")
                 return
-            backup = None
-            if SDK.exists():
-                backups = STUDIO / "_SdkBackups"
-                check_path(backups, missing_ok=True)
-                backups.mkdir(exist_ok=True)
-                backup = Path(tempfile.mkdtemp(prefix="sdk-", dir=backups)) / SDK.name
-                rename_snapshot(SDK, backup)
-            try:
-                rename_snapshot(candidate, SDK)
-            except OSError:
-                if backup is not None:
-                    rename_snapshot(backup, SDK)
-                raise
-            if backup is not None:
-                print(f"Previous SDK kept: {backup}")
+            install_candidate(candidate)
     finally:
         lock.rmdir()
     print(f"Fetched SDK {versions['sdk']} / Native {versions['native']}. Source commit {commit}.")
+
+
+def install_candidate(candidate):
+    """Make a checked candidate the active SDK; the previous one is kept in _SdkBackups."""
+    backup = None
+    if SDK.exists():
+        backups = STUDIO / "_SdkBackups"
+        check_path(backups, missing_ok=True)
+        backups.mkdir(exist_ok=True)
+        backup = Path(tempfile.mkdtemp(prefix="sdk-", dir=backups)) / SDK.name
+        rename_snapshot(SDK, backup)
+    try:
+        rename_snapshot(candidate, SDK)
+    except OSError:
+        if backup is not None:
+            rename_snapshot(backup, SDK)
+        raise
+    if backup is not None:
+        print(f"Previous SDK kept: {backup}")
+
+
+def version_key(text):
+    numbers = [int(n) for n in re.findall(r"\d+", str(text or "").lstrip("v").split("-")[0])[:3]]
+    return (*(numbers + [0] * (3 - len(numbers))), 0 if "-" in str(text or "") else 1)
+
+
+def newest_os_release(os_checkout):
+    """(version, folder) of the newest build/release-<version>/ in the OS development checkout, or (None, None)."""
+    folders = [p for p in Path(os_checkout).glob("build/release-*") if (p / "NexvynOS.nro").is_file()]
+    if not folders:
+        return None, None
+    best = max(folders, key=lambda p: version_key(p.name[len("release-"):]))
+    return best.name[len("release-"):], best
+
+
+def sync_os_release(os_checkout, public_checkout):
+    """Owner-approved pre-release: the OS's own release export (tools/release.py sync_sdk, with its public-text filter)
+    runs into a throwaway clone of the public SDK repository; the result becomes the active SDK. The source record says
+    `owner-prerelease` with the OS commit, never an official commit. Replace it with --fetch once the release is public."""
+    os_checkout = Path(os_checkout).resolve(strict=True)
+    public_checkout = Path(public_checkout).resolve(strict=True)
+    version, _ = newest_os_release(os_checkout)
+    if not version:
+        raise ValueError("The OS checkout has no build/release-<version>/NexvynOS.nro.")
+    os_commit = git(os_checkout, "rev-parse", "--verify", "HEAD")
+    base = git(public_checkout, "rev-parse", "--verify", "HEAD")
+    with tempfile.TemporaryDirectory(prefix="_temp_sdk_prerelease_", dir=STUDIO) as scratch:
+        clone = Path(scratch) / "public"
+        subprocess.run(["git", "clone", "--quiet", str(public_checkout), str(clone)], check=True)
+        script = ("import sys, json; sys.path.insert(0, 'tools'); import release; release.sync_sdk(); "
+                  "print(json.dumps(release.leak_check()))")
+        out = subprocess.run([sys.executable, "-X", "utf8", "-c", script], cwd=os_checkout, capture_output=True, text=True,
+                             encoding="utf-8", env={**os.environ, "RELEASE_REPO": str(clone)})
+        if out.returncode != 0:
+            raise ValueError("The OS release export failed: " + (out.stderr or out.stdout).strip()[-400:])
+        problems = [p for p in json.loads(out.stdout.strip().splitlines()[-1]) if "SDK/" in p]
+        if problems:
+            raise ValueError("The exported SDK has private content: " + "; ".join(problems[:5]))
+        source = clone / "SDK"
+        versions = read_json(source / "VERSION.json")
+        if versions.get("os") != version:
+            raise ValueError(f"Exported SDK says OS {versions.get('os')}, the release build is {version}.")
+        candidate = Path(scratch) / "sdk"
+        for path in sorted(source.rglob("*")):
+            if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+                target = candidate / path.relative_to(source)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(path, target)
+        provenance = {"repository": "owner-prerelease", "commit": os_commit,
+                      "prerelease": {"os": version, "sdk": versions.get("sdk"), "publicBase": base,
+                                     "method": "OS tools/release.py sync_sdk over the public repository HEAD",
+                                     "replaceWith": "port_studio.py sdk-update once the release is on GitHub"}}
+        (candidate / SDK_SOURCE).write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
+        problem = sdk_problem(sdk_report(candidate))
+        if problem:
+            raise ValueError(problem)
+        for tool in sdk_paths(candidate):
+            subprocess.run([sys.executable, "-B", str(tool), "--help"], check=True, stdout=subprocess.DEVNULL)
+        install_candidate(candidate)
+    print(f"Active SDK {versions['sdk']} / Native {versions['native']} (OS {version}, owner pre-release; OS commit {os_commit[:12]}).")
+
+
+FRESHNESS_CACHE = STUDIO / "_EmulatorCache" / "public_release.json"
+FRESHNESS_SECONDS = 3600
+
+
+def public_latest():
+    """(tag, commit) of the newest public release, or (None, None) when offline. Cached for an hour so doctor stays fast."""
+    try:
+        cached = json.loads(FRESHNESS_CACHE.read_text(encoding="utf-8"))
+        if time.time() - cached.get("at", 0) < FRESHNESS_SECONDS:
+            return cached.get("tag"), cached.get("sha")
+    except (OSError, ValueError):
+        pass
+    tag, sha = _public_latest_uncached()
+    if tag:
+        FRESHNESS_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        FRESHNESS_CACHE.write_text(json.dumps({"at": time.time(), "tag": tag, "sha": sha}), encoding="utf-8")
+    return tag, sha
+
+
+def _public_latest_uncached():
+    try:
+        tag = subprocess.run(["gh", "release", "list", "-R", SDK_REPOSITORY, "--limit", "1", "--json", "tagName",
+                              "-q", ".[0].tagName"], capture_output=True, text=True, timeout=30).stdout.strip()
+        if not tag:
+            return None, None
+        sha = subprocess.run(["gh", "api", f"repos/{SDK_REPOSITORY}/commits/{tag}", "-q", ".sha"],
+                             capture_output=True, text=True, timeout=30).stdout.strip()
+        return tag, sha if re.fullmatch(r"[a-f0-9]{40}", sha or "") else None
+    except (OSError, subprocess.SubprocessError):
+        return None, None
+
+
+def auto_update(os_checkout=None, public_checkout=None, dry_run=False):
+    """Rule: the active SDK is always the newest one. A newer public release wins (official commit); otherwise a newer
+    local OS release build is imported as an owner pre-release. Returns a one-line decision."""
+    active = sdk_report(SDK)["versions"].get("os") if SDK.is_dir() else None
+    choices = []
+    tag, sha = public_latest()
+    if tag and sha:
+        choices.append((version_key(tag), "public", tag, sha))
+    if os_checkout and Path(os_checkout).is_dir():
+        version, _ = newest_os_release(os_checkout)
+        if version:
+            choices.append((version_key(version), "os-release", version, None))
+    newer = [c for c in choices if c[0] > version_key(active)]
+    if not newer:
+        return f"SDK is current (OS {active})."
+    best = max(newer, key=lambda c: (c[0], c[1] == "public"))
+    if dry_run:
+        return f"Newer SDK available: OS {best[2]} ({best[1]}); active OS {active}."
+    if best[1] == "public":
+        fetch(best[3])
+        with tempfile.TemporaryDirectory(prefix="_temp_sdk_public_", dir=STUDIO) as scratch:
+            copy = Path(scratch) / "sdk"
+            shutil.copytree(STUDIO / "_SdkCandidates" / best[3], copy)
+            install_candidate(copy)
+        return f"Updated SDK to public OS {best[2]} (official commit {best[3][:12]})."
+    if not public_checkout:
+        raise ValueError("Set publicCheckout in _LocalData/studio_local.json (a clone of the public SDK repository).")
+    sync_os_release(os_checkout, public_checkout)
+    return f"Updated SDK to OS {best[2]} (owner pre-release)."
+
+
+def local_paths():
+    """Machine paths from the git-ignored _LocalData/studio_local.json (osCheckout, publicCheckout)."""
+    try:
+        return json.loads((STUDIO.parent / "_LocalData" / "studio_local.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
 
 
 def fetch(commit):
@@ -185,13 +322,45 @@ def main():
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--from-checkout", type=Path)
     source.add_argument("--fetch", metavar="COMMIT", help="Fetch the pinned commit from the official source as an SDK candidate.")
+    source.add_argument("--from-os-release", type=Path, metavar="OS_CHECKOUT",
+                        help="Owner pre-release: export the newest local OS release build's SDK and make it active.")
+    source.add_argument("--auto", action="store_true", help="Update to the newest SDK (public release or local OS release).")
+    source.add_argument("--from-local", type=Path, metavar="OS_CHECKOUT",
+                        help="Compare a local OS development checkout's native kit with the released snapshot (read-only; "
+                             "--stage writes a private-preview candidate that build and pack refuse). See sdk_local.py.")
+    parser.add_argument("--json", action="store_true", help="With --from-local: machine-readable comparison.")
+    parser.add_argument("--public", type=Path, metavar="PUBLIC_CHECKOUT",
+                        help="Clone of the public SDK repository (default: publicCheckout in _LocalData/studio_local.json).")
+    parser.add_argument("--check", action="store_true", help="With --auto: only report whether a newer SDK exists.")
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--stage", action="store_true", help="Create a candidate without changing the active SDK.")
     modes.add_argument("--record-active", action="store_true", help="Write the commit record if the current snapshot matches.")
     args = parser.parse_args()
     if args.fetch and (args.stage or args.record_active):
         parser.error("--fetch produces a candidate on its own.")
+    if args.from_local and args.record_active:
+        parser.error("--from-local never records an active SDK.")
     try:
+        if args.from_local:
+            import sdk_local
+            result = sdk_local.compare(args.from_local, SDK)
+            if args.json:
+                printable = {k: v for k, v in result.items() if k != "privateFiles"}
+                print(json.dumps(printable, indent=2))
+            else:
+                print(sdk_local.render(result))
+            if args.stage:
+                print(f"Preview candidate (private-preview, not for builds): {sdk_local.stage(result, SDK, STUDIO / '_SdkCandidates')}")
+            else:
+                print("Nothing was written. Use --stage for a preview candidate.")
+            return 0
+        local = local_paths()
+        if args.auto:
+            print(auto_update(local.get("osCheckout"), args.public or local.get("publicCheckout"), dry_run=args.check))
+            return 0
+        if args.from_os_release:
+            sync_os_release(args.from_os_release, args.public or local.get("publicCheckout") or "")
+            return 0
         if args.fetch:
             fetch(args.fetch)
         else:

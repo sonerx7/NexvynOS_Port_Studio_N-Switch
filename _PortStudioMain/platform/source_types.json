@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "about": "Source-type rules for tools/assess.py. A new type or signal is one edit here. Platform facts stay in capabilities.json.",
+  "signalKinds": {
+    "signal": "a SIGNALS key from assess.py found in runtime code",
+    "regex": "a regular expression over runtime source and build files",
+    "path": "a regular expression over relative file paths (forward slashes), any file",
+    "build": "a build system name as assess.py reports it",
+    "lang": "a language that is at least a quarter of the runtime files"
+  },
+  "minScore": 3,
+  "fallback": {"native": "software", "other": "unknown"},
+  "types": {
+    "decomp": {
+      "label": "decompiled or recompiled game",
+      "signals": [
+        {"kind": "regex", "pattern": "(INCLUDE_ASM|GLOBAL_ASM|INCLUDE_RODATA|[Dd]ecompiled from|\\bFUN_[0-9a-f]{6,}\\b|\\bsub_[0-9A-F]{6,}\\b|\\bDAT_[0-9a-f]{6,}\\b)", "weight": 5},
+        {"kind": "path", "pattern": "(?i)(^|/)(splat\\.ya?ml|symbol_addrs\\.txt|undefined_syms\\.txt|asm/nonmatchings/)", "weight": 4},
+        {"kind": "path", "pattern": "(?i)(^|/)(decomp|recomp)[^/]*/", "weight": 2}
+      ],
+      "templates": [{"template": "decomp-skeleton"}],
+      "profile": "generic"
+    },
+    "emulator": {
+      "label": "emulator",
+      "signals": [
+        {"kind": "signal", "key": "jit_exec", "weight": 2},
+        {"kind": "regex", "pattern": "(?i)\\b(opcode|dynarec|recompiler|load_?rom|cartridge|cpu_?step|mmu_?read|z80|6502|m68k|arm7tdmi)\\b", "weight": 4},
+        {"kind": "path", "pattern": "(?i)(^|/)(cpu|mmu|cart|bios)/", "weight": 1}
+      ],
+      "templates": [{"template": "emu-skeleton"}, {"template": "sdl2", "when": "signal:sdl2"}],
+      "profile": "generic"
+    },
+    "web": {
+      "label": "web or HTML application",
+      "signals": [
+        {"kind": "path", "pattern": "(?i)(^|/)index\\.html?$", "weight": 4},
+        {"kind": "path", "pattern": "(?i)(^|/)package\\.json$", "weight": 1},
+        {"kind": "regex", "pattern": "(document\\.getElementById|getContext\\(['\"]webgl2?|requestAnimationFrame|<canvas)", "weight": 3}
+      ],
+      "templates": [],
+      "runtime": "web",
+      "profile": "generic"
+    },
+    "game": {
+      "label": "game",
+      "signals": [
+        {"kind": "signal", "key": "sdl2", "weight": 1},
+        {"kind": "signal", "key": "input_gamepad", "weight": 2},
+        {"kind": "signal", "key": "d3d9_11", "weight": 1},
+        {"kind": "signal", "key": "directdraw", "weight": 1},
+        {"kind": "signal", "key": "vulkan", "weight": 1},
+        {"kind": "regex", "pattern": "(?i)\\b(player|enemy|sprite|score|game_?loop|savegame|hud|level_?load)\\b", "weight": 3},
+        {"kind": "path", "pattern": "(?i)\\.(wad|pak|pk3|grp|mpq|bsa)$", "weight": 3},
+        {"kind": "path", "pattern": "(?i)(^|/)(levels?|maps|sprites|sounds)/", "weight": 2}
+      ],
+      "templates": [{"template": "sdl2", "when": "signal:sdl2"}, {"template": "port", "when": "build:CMake"}, {"template": "game"}],
+      "previewTemplates": [{"template": "vulkan", "when": "signal:vulkan"}],
+      "profile": "generic"
+    },
+    "engine": {
+      "label": "game engine",
+      "signals": [
+        {"kind": "path", "pattern": "(?i)(^|/)(engine|runtime|editor|renderer|rhi)/", "weight": 2},
+        {"kind": "regex", "pattern": "(?i)(class\\s+\\w*Engine\\b|scene_?graph|entity_?component|RenderGraph|asset_?pipeline)", "weight": 3},
+        {"kind": "signal", "key": "physics_middleware", "weight": 1}
+      ],
+      "templates": [{"template": "port", "when": "build:CMake"}, {"template": "gl"}],
+      "previewTemplates": [{"template": "vulkan", "when": "signal:vulkan"}],
+      "profile": "editor"
+    },
+    "app": {
+      "label": "GUI application",
+      "signals": [
+        {"kind": "signal", "key": "qt", "weight": 4},
+        {"kind": "signal", "key": "gtk", "weight": 4},
+        {"kind": "signal", "key": "imgui", "weight": 2},
+        {"kind": "regex", "pattern": "(QMainWindow|wxFrame|\\bmenubar\\b|\\btoolbar\\b|undo_?stack)", "weight": 2}
+      ],
+      "templates": [{"template": "app"}],
+      "profile": "editor"
+    },
+    "tool": {
+      "label": "command-line tool",
+      "signals": [
+        {"kind": "regex", "pattern": "(\\bargparse\\b|getopt(_long)?\\s*\\(|\\bclap::|[Uu]sage:\\s)", "weight": 3},
+        {"kind": "signal", "key": "sdl2", "weight": -2},
+        {"kind": "signal", "key": "gl_core", "weight": -2}
+      ],
+      "templates": [{"template": "app"}],
+      "profile": "editor"
+    },
+    "library": {
+      "label": "library",
+      "signals": [
+        {"kind": "regex", "pattern": "add_library\\s*\\(", "weight": 3},
+        {"kind": "regex", "pattern": "add_executable\\s*\\(", "weight": -3},
+        {"kind": "path", "pattern": "(?i)(^|/)include/[^/]+/[^/]+\\.h(pp)?$", "weight": 1}
+      ],
+      "templates": [{"template": "shared-lib"}],
+      "profile": "generic"
+    },
+    "software": {
+      "label": "application (no GUI toolkit found)",
+      "signals": [],
+      "templates": [{"template": "port", "when": "build:CMake"}, {"template": "app"}],
+      "profile": "editor"
+    },
+    "unknown": {
+      "label": "not recognised",
+      "signals": [],
+      "templates": [],
+      "profile": "generic"
+    }
+  },
+  "runtimeForLanguage": {"Lua": "lua", "JavaScript": "javascript", "TypeScript": "javascript", "Python": "python3", "Java": "java"},
+  "heavy": {
+    "profile": "heavy",
+    "minTier": 4,
+    "minNativeFiles": 2000,
+    "types": ["app", "software", "engine"],
+    "markers": "\\b(OpenSubdiv|OpenVDB|embree\\d|QtWebEngine|Chromium|WebKit|third_party/blink|LibreOffice|SkCanvas|OpenImageIO|OpenColorIO|cef_app|SpiderMonkey|libavformat|assimp/|OpenCASCADE|TopoDS_)"
+  },
+  "dataLimits": {"warnFiles": 20000, "warnBytes": 1073741824},
+  "effort": {"easy": "1-3 days", "medium": "1-2 weeks", "hard": "3-8 weeks", "note": "rough estimate for one porter; replace after the first prototype"},
+  "workarounds": {
+    "language:C#": ["Rebuild the content in the OS Game Engine runtime (game-engine)", "Port a CLR runtime (Mono interpreter mode) as its own large project", "Rewrite the game code piecewise in C/C++ against the kit"],
+    "language:Go": ["Rewrite the program piecewise in C/C++", "Write a Go runtime port for the loader (large; no JIT, static link)"],
+    "language:Kotlin": ["Translate to Java for the miniJVM runtime when no Kotlin-only libraries are used", "Rewrite in C/C++"],
+    "language:Swift": ["Rewrite in C/C++", "Port a Swift toolchain to devkitA64 (large)"],
+    "language:GDScript": ["Port the Godot engine to the native kit (separate large project)", "Rebuild the content in the OS Game Engine runtime"],
+    "mono_clr": ["Replace the embedded scripting with Lua (native runtime)", "Port Mono in interpreter mode as a static library"],
+    "vulkan_rt": ["Replace ray-traced passes with raster fallbacks (most engines have one)", "Turn the feature off at build time and record the visual change"],
+    "graphics": ["Port the renderer to GL 4.3 core / GLES 3.2", "Use a translation layer to GL and accept lower performance", "Cut the heavy features (ray tracing, mesh shaders) and keep the raster path"],
+    "default": ["Replace the dependency with a kit library", "Write the missing piece as a small library", "Rewrite the part piecewise", "Choose a better-fitting runtime from capabilities.runtimes"]
+  },
+  "stagedPlan": [
+    {"stage": "core", "acceptance": "core logic builds for AArch64 and runs headless tests or a scripted session on the host", "duration": "1-3 weeks", "risk": "64-bit and x86-only code paths"},
+    {"stage": "graphics", "acceptance": "one scene renders through the released GL path in the emulator, handheld and docked", "duration": "2-6 weeks", "risk": "shader and extension gaps; draw-call cost"},
+    {"stage": "audio", "acceptance": "music and effects play through a kit library without underruns for 10 minutes", "duration": "3-7 days", "risk": "middleware without AArch64 builds"},
+    {"stage": "input", "acceptance": "every action reachable by controller and touch; experience profile declared", "duration": "3-7 days", "risk": "mouse-only interactions"},
+    {"stage": "save", "acceptance": "settings and saves survive quit and relaunch", "duration": "2-5 days", "risk": "absolute paths and registry use"},
+    {"stage": "localization", "acceptance": "UI text loads from lang files; fonts cover the shipped languages", "duration": "2-5 days", "risk": "fonts and text input"},
+    {"stage": "package", "acceptance": "package within file-count and size limits; emulator gameplay run reviewed in both modes", "duration": "2-5 days", "risk": "data size over package limits; redistribution rights"}
+  ]
+}
