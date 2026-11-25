@@ -28,7 +28,7 @@ The OS limits a single package to 1 GiB unpacked. Use explicit data mappings suc
 
 ## Publish, update and withdraw (owner only)
 
-Shortcut: `python -X utf8 _PortStudioMain/tools/market_release.py <port>` checks `release.status`, prepares the data-free candidate with a search-friendly item name (`nexvyn-os-nx-<port>-game-port`), shows the publish dry run and prints the `--yes` command for the owner. It never uploads itself.
+Automation for open-source ports: `python -X utf8 _PortStudioMain/tools/market_release.py <port> --approve` runs verify (no FAIL), copies 3-5 real shots from the newest emulator run whose automatic and visual review passed into the store screenshots, and, with `--approve` (the owner's rights decision), writes DISTRIBUTION.md, the version sections of CHANGELOG.md and KNOWN_ISSUES.md and `release.status: ready`. It then prepares the data-free candidate (item `nexvyn-os-nx-<port>-game-port`), shows the publish dry run and prints the `--yes` command for the owner. It refuses an unrecognised licence and a module with lifted or recompiled commercial code (evidence in port.json or PORT.md, unless `"codeRedistributable": true`). `--all` lists what every port still needs. It never uploads.
 
 Only the owner publishes. An Archive item can be changed only by the account that created it, and the keys exist only on the owner's machine. Agents and contributors prepare a candidate and stop; they never pass `--yes`.
 
