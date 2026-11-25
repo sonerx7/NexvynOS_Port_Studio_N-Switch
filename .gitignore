@@ -111,3 +111,40 @@ _PortStudioMain/_SdkBackups/
 _PortStudioMain/_EmulatorCache/
 .emulator_profile/
 .emulator_profile.lock
+
+# Emulator scenario runs (shots, logs, review.md) stay local evidence
+**/screenshots/runs/
+
+# Throwaway upstream clones for assessment
+_PortStudioMain/tmp_*/
+
+# Per-port emulator profiles (copies of the emulator data: keys, firmware, SD card)
+.emulator_profile_*/
+
+# Local debug output: ELF symbol dump
+symbols.txt
+
+# mm3 debugging scripts with fixed local Temp paths; not Studio tools
+_PortStudioMain/tools/build_and_run_v7.py
+_PortStudioMain/tools/check_status.py
+_PortStudioMain/tools/clean_memory.py
+_PortStudioMain/tools/clean_traces.py
+_PortStudioMain/tools/collect_shots.py
+_PortStudioMain/tools/trace_dsound_all.py
+_PortStudioMain/tools/patch_11e61b.py
+_PortStudioMain/tools/patch_124e61.py
+_PortStudioMain/tools/patch_219cd.py
+_PortStudioMain/tools/patch_279763.py
+_PortStudioMain/tools/patch_27989c_steps.py
+_PortStudioMain/tools/patch_27b8c0.py
+_PortStudioMain/tools/patch_ac97_spinlock.py
+_PortStudioMain/tools/patch_audio_init.py
+_PortStudioMain/tools/patch_audio_stall.py
+_PortStudioMain/tools/patch_deeper_audio.py
+_PortStudioMain/tools/patch_e30c8.py
+_PortStudioMain/tools/patch_e3cfe.py
+_PortStudioMain/tools/patch_ec7f7.py
+_PortStudioMain/tools/patch_kernel_read.py
+_PortStudioMain/tools/patch_ohci_init.py
+_PortStudioMain/tools/patch_spawner.py
+_PortStudioMain/tools/patch_step.py

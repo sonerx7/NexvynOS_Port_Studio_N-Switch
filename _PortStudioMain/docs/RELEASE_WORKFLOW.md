@@ -42,6 +42,51 @@ The official store builds its package and catalog from the submission source. Ru
 3. `python _PortStudioMain/tools/emulator_test.py run GamePorts/<port> --app-id <id> --module <build>/<name>.nxvmod [--game-dir <data>] [--wait 40]` runs the launcher in an isolated `.emulator_profile/`, saves screenshots and the app log to `<port>/screenshots/`.
 3b. `--mode docked|handheld|both` sets the emulator's console mode (Ryujinx `docked_mode`; its default here is docked, 1080p). Run `--mode both` for every launcher, layout or input change: handheld is 720p with touch, docked is 1080p with no touch screen, and each shows different bugs. The result line prints the mode that ran. The emulator does not show real frame pacing, power or thermal behaviour in either mode.
 4. Record the result as an emulator check in `PORT.md`. It does not replace a physical Switch test.
+5. **Newest OS rule.** Every emulator run uses the newest Nexvyn OS known on the machine: the public release (downloaded automatically when GitHub has a newer one than the cache) or a local release build `build/release-<version>/NexvynOS.nro` of the OS development checkout, accepted only when it matches its `SHA256SUMS`. The run prints `Nexvyn OS <version> (<source>)` and `scenario.json` records it. `--nro` or `NEXVYN_NRO` still wins, with a warning when a newer build is known. Machine paths (Ryujinx, `osCheckout`) live in the git-ignored `_LocalData/studio_local.json`; Ryujinx is also searched in the usual install folders and remembered there.
+6. **Targets.** `shot_grid.py <shot.png> --port <port> --mode docked|handheld` draws the port's tap targets on a real screenshot; fix stale ones before a run.
+7. **Update and clean install.** A scenario with `"setup": "clean"` removes the app and its data first; `"setup": "update"` needs `--previous <older .nxvapp>`, runs it once, then installs this version over it.
+8. **Console round.** `console_run.py push <port> --host <ip>` (FTP, Connect to PC), `console_run.py sheet <port>` for the tester's checklist, `console_run.py record <sheet-folder>` for console results. Only a filled sheet counts as console evidence.
+
+### Gameplay scenario (required before a release)
+
+A launcher screenshot proves only that the launcher opened. Every port declares a `gameplay` scenario: the steps that get from the launcher into real play, with a `shot` at each phase.
+
+```json
+"emulator": {
+  "targets": { "play": { "handheld": [1100, 640], "docked": [1100, 640] } },
+  "scenarios": {
+    "gameplay": {
+      "wait": 25, "timeout": 240,
+      "steps": ["shot launcher", "tap play", "wait 30", "shot menu", "dpad a", "wait 40",
+                "shot ingame_00s", "padhold zr 2", "finger 0 down 640 360", "finger 0 up 640 360", "wait 10",
+                "shot ingame_10s", "stats ingame"],
+      "gameplay": ["ingame_00s", "ingame_10s"],
+      "motion": [["ingame_00s", "ingame_10s"]],
+      "expectLog": ["map loaded|level start"]
+    }
+  }
+}
+```
+
+```powershell
+python _PortStudioMain/tools/scenario_run.py GamePorts/<port> --app-id <id> --module <file.nxvmod> --game-dir <data>
+```
+
+- Each run writes `<port>/screenshots/runs/<stamp>_gameplay_<mode>/`. It holds the shots, the app log, `system.log`, `scenario.json`, `report.json` and `review.md`. Earlier runs are never overwritten.
+- **Automatic checks** (`shot_review.py`), all of which must pass:
+  - Every shot exists.
+  - Gameplay shots are not one flat colour.
+  - Each `motion` pair differs, so the game is not frozen.
+  - The app was still open when each gameplay shot was taken (system log `autorun shot` against `res <id> closed`).
+  - `expectLog` patterns appear.
+  - No `not responding`, crash, missing symbol or out-of-memory line.
+- The FPS median, min and max and the peak heap come from the system log. They are emulator numbers.
+- **Visual review**, also required: the agent (or a person) opens every PNG and fills the table in `review.md`: what the image shows, whether it is really in game, and the problems seen. Then they replace `Visual review: **PENDING**` with PASS or FAIL. Only the visual layer can tell gameplay from a menu, a loader or the desktop. `shot_review.py <run> --check` exits 0 only when both layers pass.
+- Each run also writes `results.jsonl` (one line in the OS device-ingest format: `id`, `status`, `metrics`, `markers`; `environment=emulator`) and `performance_row.md` (date, app, mode, hardware, FPS, peak heap, result). The status stays `NOT_RUN` until the visual review passes.
+- `--console-profile` limits the emulator to 4 CPUs at below-normal priority. Numbers stay emulator-relative; use it for fair before/after comparisons.
+- Declare `update` and `clean_install` scenarios as well (`verify.py` checks them): install the previous package and this one over it, data must survive; remove app and data, install, first launch.
+- Use the gameplay shots as the source for store images when they pass (release workflow step "real screenshots").
+- Field case: an AoE2 "after play" screenshot looked busy but showed the Nexvyn desktop, because the game had closed. The motion check (difference 0.1) and the app-closed check now catch this.
 
 ## Field notes (from the Red Alert 2 and CS 1.6 runs)
 

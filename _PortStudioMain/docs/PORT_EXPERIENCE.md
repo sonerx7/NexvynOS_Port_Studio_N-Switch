@@ -1,6 +1,6 @@
 # Port experience layer
 
-One declaration in `port.json` describes how a port feels on Nexvyn OS: input modes, touch gestures, performance profiles and the launcher. The Studio validates it and generates files your port code reads. Presets live in `_PortStudioMain/profiles/` (`rts`, `fps`, `editor`, `generic`).
+One declaration in `port.json` describes how a port feels on Nexvyn OS: input modes, touch gestures, performance profiles and the launcher. The Studio validates it and generates files your port code reads. Presets live in `_PortStudioMain/profiles/` (`rts`, `fps`, `editor`, `generic`, `heavy`). `heavy` is for tier-4 sources (modern GL 4.x, Vulkan-class or Direct3D 11-class engines and heavy applications): render scale 0.67 in both modes and a 30 fps cap. It is a starting point from the tier estimate, not a console measurement. Adding a preset never changes the generated output of the others (golden-hash test in `test_scaffold.py`).
 
 ```bash
 python _PortStudioMain/tools/port_studio.py experience init GamePorts/<port> rts   # adds the block
@@ -53,6 +53,14 @@ Presets describe a typical genre; the engine decides what is real. Mark what the
 ## What it does not do
 
 It declares and validates. Your engine code still has to read touch contacts (`nxn_input_touch`), recognise the gestures and call the action. Follow [INPUT_CONTRACT.md](../nexvyn_sdk/Guides/INPUT_CONTRACT.md). `nx_experience.h` gives you `nx_action`, `nx_gesture`, the gesture to action table and the two performance profiles so the numbers live in one place. A gesture recogniser and runtime remapping UI are not provided yet.
+
+## OS memory and performance features
+
+- **`fullscreenPause`** (`app.json`, OS 1.4.0): `true` frees the compositor's memory while the app runs fullscreen. New port skeletons set it.
+- **OS performance panel** (Ctrl+Alt+P or L+R+ZL+ZR, OS 1.4.0): frame time and phases, skipped frames, RAM, GPU lock time. It is a shell feature with no app API.
+- **Port input helper** (`nxn_port_input.h`, SDK 1.16): rotate (`NXN_PI_EV_ROTATE`, `angle_delta`, `angle_total`) and double tap (`NXN_PI_EV_DOUBLE_TAP`).
+- **Script APIs** (SDK 1.16): `input.touches` (every finger as `{id, x, y, phase}`) and idle frame pacing (`update` returns false to idle, `ui.requestFrame()` wakes the app).
+- Not tested on a device.
 
 ## Updates and compatibility
 
