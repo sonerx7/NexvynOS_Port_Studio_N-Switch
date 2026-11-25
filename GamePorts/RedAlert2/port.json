@@ -195,14 +195,22 @@
     "targets": {
       "play": {
         "handheld": [
-          816,
-          172
+          1040,
+          77
+        ],
+        "docked": [
+          1218,
+          205
         ]
       },
       "single_player": {
         "handheld": [
           1150,
           265
+        ],
+        "docked": [
+          1725,
+          398
         ]
       },
       "play_maximized": {
@@ -215,12 +223,20 @@
         "handheld": [
           1152,
           365
+        ],
+        "docked": [
+          1728,
+          548
         ]
       },
       "start_game": {
         "handheld": [
           1152,
           315
+        ],
+        "docked": [
+          1728,
+          472
         ]
       },
       "tab_howto": {
@@ -234,6 +250,140 @@
           519,
           207
         ]
+      },
+      "play_alt": {
+        "handheld": [
+          1040,
+          77
+        ],
+        "docked": [
+          1678,
+          73
+        ]
+      }
+    },
+    "scenarios": {
+      "gameplay": {
+        "wait": 25,
+        "timeout": 330,
+        "steps": [
+          "shot launcher",
+          "tap play_alt",
+          "wait 2",
+          "tap play",
+          "wait 45",
+          "shot menu",
+          "tap single_player",
+          "wait 6",
+          "shot single_menu",
+          "tap skirmish",
+          "wait 10",
+          "shot skirmish_lobby",
+          "tap start_game",
+          "wait 50",
+          "shot ingame_00s",
+          "tap 655 402",
+          "wait 1",
+          "tap 330 300",
+          "wait 2",
+          "hold right 3",
+          "wait 4",
+          "shot ingame_07s",
+          "stats ingame"
+        ],
+        "gameplay": [
+          "ingame_00s",
+          "ingame_07s"
+        ],
+        "motion": [
+          [
+            "ingame_00s",
+            "ingame_07s"
+          ]
+        ],
+        "expectLog": []
+      },
+      "update": {
+        "wait": 25,
+        "timeout": 330,
+        "steps": [
+          "shot launcher",
+          "tap play_alt",
+          "wait 2",
+          "tap play",
+          "wait 45",
+          "shot menu",
+          "tap single_player",
+          "wait 6",
+          "shot single_menu",
+          "tap skirmish",
+          "wait 10",
+          "shot skirmish_lobby",
+          "tap start_game",
+          "wait 50",
+          "shot ingame_00s",
+          "tap 655 402",
+          "wait 1",
+          "tap 330 300",
+          "wait 2",
+          "hold right 3",
+          "wait 4",
+          "shot ingame_07s",
+          "stats ingame"
+        ],
+        "gameplay": [
+          "ingame_00s",
+          "ingame_07s"
+        ],
+        "motion": [
+          [
+            "ingame_00s",
+            "ingame_07s"
+          ]
+        ],
+        "expectLog": [],
+        "note": "Setup before the run: install the previous version of the package, then this version over it (same app ID, higher version). Settings and saves must survive."
+      },
+      "clean_install": {
+        "wait": 25,
+        "timeout": 330,
+        "steps": [
+          "shot launcher",
+          "tap play_alt",
+          "wait 2",
+          "tap play",
+          "wait 45",
+          "shot menu",
+          "tap single_player",
+          "wait 6",
+          "shot single_menu",
+          "tap skirmish",
+          "wait 10",
+          "shot skirmish_lobby",
+          "tap start_game",
+          "wait 50",
+          "shot ingame_00s",
+          "tap 655 402",
+          "wait 1",
+          "tap 330 300",
+          "wait 2",
+          "hold right 3",
+          "wait 4",
+          "shot ingame_07s",
+          "stats ingame"
+        ],
+        "gameplay": [
+          "ingame_00s",
+          "ingame_07s"
+        ],
+        "motion": [
+          [
+            "ingame_00s",
+            "ingame_07s"
+          ]
+        ],
+        "expectLog": [],
+        "note": "Setup before the run: remove the app and its data folder from the emulator profile, then install this version. The first run must reach the data-folder prompt or the menu."
       }
     }
   }

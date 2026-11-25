@@ -30,6 +30,7 @@
   "liveResize": true,
   "gamepad": true,
   "loadingHint": true,
+  "memory": 640,
   "description": {
     "en": "Command & Conquer: Red Alert 2 & Yuri's Revenge native port for Nexvyn OS with full launcher, mod selector, stable profile and RTS camera controls.",
     "tr": "Nexvyn OS için tam kapsamlı Red Alert 2 & Yuri's Revenge native portu: başlatıcı, mod seçimi, stabil profil ve pratik RTS kamera kontrolleri.",
