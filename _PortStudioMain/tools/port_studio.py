@@ -2,35 +2,42 @@
 """Nexvyn Port Studio setup, verification, and local packaging."""
 
 import argparse
+import functools
 import json
 import os
 import re
 import shutil
-import stat
-import struct
 import subprocess
 import sys
 import tempfile
 from pathlib import Path, PurePosixPath
 from zipfile import BadZipFile, ZipFile
-from zlib import crc32
+
+# Pure helpers live in studio_*.py and are re-exported here so `port_studio.<name>` keeps working.
+# Everything that reads ROOT, STUDIO, SDK or sdk_call stays in this module, because tests and
+# scaffold.py patch those names on port_studio and a patch would not reach another module.
+from studio_files import (  # noqa: F401
+    check_path, copy_files, list_files, read_json, relative_path, under, unique_paths, write_atomic,
+)
+from studio_pack import check_no_preview_payload, check_package_limits, local_entries  # noqa: F401
+from studio_sdk import (  # noqa: F401
+    SDK_BUILD_FILES, SDK_REPOSITORY, SDK_SOURCE, sdk_paths, sdk_pin, sdk_problem, sdk_report,
+)
+from studio_store import (  # noqa: F401
+    FORBIDDEN_DIRS, FORBIDDEN_NAMES, PRIVATE_DIRS, PRIVATE_SUFFIXES, check_payload_name, check_screenshot,
+    store_metadata,
+)
 
 
-ROOT = Path(__file__).resolve().parents[2]
-STUDIO = ROOT / "_PortStudioMain"
+# PORT_STUDIO_ROOT points the port commands at another workspace (make --workspace); Studio files stay here.
+ROOT = Path(os.environ.get("PORT_STUDIO_ROOT") or Path(__file__).resolve().parents[2]).resolve()
+STUDIO = Path(__file__).resolve().parents[1]
 SDK = STUDIO / "nexvyn_sdk"
-STUDIO_VERSION = "0.3.0"
-SDK_REPOSITORY = "sonerx7/Nexvyn-OS-NX"
-SDK_SOURCE = "STUDIO_SOURCE.json"
+STUDIO_VERSION = "0.5.0"
 NXV = SDK / "Tools/nxv/nxv.py"
 NATIVE_TOOLS = SDK / "Languages/c/native-kit/tools"
 PACKER = NATIVE_TOOLS / "nxvapp_pack.py"
 NATIVE = NATIVE_TOOLS / "nxv_native/__main__.py"
-SDK_BUILD_FILES = (
-    "Languages/c/native-kit/sdk/native/toolchain/nexvyn-switch.cmake",
-    "Languages/c/native-kit/sdk/native/templates/game/CMakeLists.txt",
-    "Languages/c/native-kit/sdk/native/lib/Makefile",
-)
 PORT_TYPES = {"GamePorts": ("game", "Games"), "SoftwarePorts": ("software", "Apps")}
 STORE_CATEGORIES = {
     "Games": {"action", "arcade", "board", "cards", "casual", "puzzle", "racing", "sports", "strategy", "word"},
@@ -40,65 +47,6 @@ VERSION = r"(?:0|[1-9][0-9]*)(?:\.(?:0|[1-9][0-9]*)){2}"
 SLUG = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 APP_ID = r"[a-z][a-z0-9-]*(?:\.[a-z0-9][a-z0-9_-]*){2,}"
 RELEASE_ROOT = "_RealesedBuilds"
-PRIVATE_SUFFIXES = {
-    ".exe", ".dll", ".msi", ".zip", ".rar", ".7z", ".tar", ".gz", ".xz",
-    ".iso", ".rom", ".nsp", ".xci", ".nxvapp", ".pem", ".key", ".pfx", ".p12",
-    ".csf", ".mix", ".mpq", ".wad", ".pak", ".vpk", ".bsp", ".bik", ".smk",
-}
-PRIVATE_DIRS = {"_localdata", "userdata", "private", "saves"}
-FORBIDDEN_DIRS = {"__pycache__", "dist", "appmarket", "_realesedbuilds", "build"}
-FORBIDDEN_NAMES = {"manifest.sha256", "manifest.sig", "id_rsa", "id_ed25519", "desktop.ini", "thumbs.db"}
-
-
-def read_json(path):
-    def unique_object(pairs):
-        result = {}
-        for key, value in pairs:
-            if key in result:
-                raise ValueError(f"Duplicate JSON key: {key}")
-            result[key] = value
-        return result
-
-    data = json.loads(path.read_text(encoding="utf-8-sig"), object_pairs_hook=unique_object)
-    if not isinstance(data, dict):
-        raise ValueError(f"{path}: JSON nesnesi bekleniyor.")
-    return data
-
-
-def relative_path(value):
-    if not isinstance(value, str):
-        raise ValueError("File path must be a string.")
-    parts = value.split("/")
-    for part in parts:
-        if (
-            not part or part.startswith(".") or part.endswith((" ", "."))
-            or re.search(r'[<>:"\\|?*\x00-\x1f]', part)
-            or part.split(".")[0].upper() in {"CON", "PRN", "AUX", "NUL"}
-            or re.fullmatch(r"(?:COM|LPT)[1-9¹²³]", part.split(".")[0].upper())
-        ):
-            raise ValueError(f"Not a safe relative package path: {value!r}")
-    return PurePosixPath(value)
-
-
-def check_path(path, *, missing_ok=False):
-    try:
-        info = path.lstat()
-    except FileNotFoundError:
-        if missing_ok:
-            return
-        raise
-    if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT:
-        raise ValueError(f"Links and junctions are not allowed: {path}")
-    if not (stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode)):
-        raise ValueError(f"Expected a regular file or folder: {path}")
-
-
-def under(base, rel, *, missing_ok=False):
-    current = base
-    for part in rel.parts:
-        current /= part
-        check_path(current, missing_ok=missing_ok)
-    return current
 
 
 def port_path(value):
@@ -110,58 +58,6 @@ def port_path(value):
     if not raw.is_dir():
         raise ValueError(f"Port folder not found: {raw}")
     return raw
-
-
-def list_files(base, relative=None):
-    directory = base if relative is None else base / relative
-    for item in sorted(directory.iterdir()):
-        rel = relative_path(item.name) if relative is None else relative / relative_path(item.name)
-        check_path(item)
-        if item.is_dir():
-            yield from list_files(base, rel)
-        else:
-            yield rel
-
-
-def check_payload_name(path, *, public):
-    names = {part.casefold() for part in path.parts}
-    suffix = path.suffix.casefold()
-    if names & (FORBIDDEN_DIRS | FORBIDDEN_NAMES) or suffix in {".pem", ".key", ".pfx", ".p12", ".nxvapp"}:
-        raise ValueError(f"Cannot be used as a package entry: {path}")
-    if public and (names & PRIVATE_DIRS or suffix in PRIVATE_SUFFIXES):
-        raise ValueError(f"Cannot be added to the Store source: {path}")
-
-
-def unique_paths(paths):
-    seen = {}
-    files = set()
-    for path in paths:
-        folded = path.as_posix().casefold()
-        if folded in files:
-            raise ValueError(f"Paket yolu yineleniyor: {path}")
-        files.add(folded)
-        for item in (*path.parents, path):
-            key = item.as_posix().casefold()
-            if seen.setdefault(key, item) != item:
-                raise ValueError(f"Case collision in package paths: {item}")
-    for path in paths:
-        if any(parent.as_posix().casefold() in files for parent in path.parents):
-            raise ValueError(f"File/folder collision in package path: {path}")
-
-
-def copy_files(entries, destination):
-    for rel, source in entries.items():
-        target = destination / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source, target)
-
-
-def write_atomic(target, content):
-    check_path(target, missing_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".port-studio-", dir=target.parent) as work:
-        candidate = Path(work) / target.name
-        candidate.write_text(content, encoding="utf-8", newline="\n")
-        os.replace(candidate, target)
 
 
 def sdk_call(tool, *args):
@@ -179,67 +75,6 @@ def sdk_call(tool, *args):
         raise ValueError(f"SDK check failed: {tool.name} (exit {result.returncode})")
 
 
-def sdk_paths(snapshot):
-    return (
-        snapshot / NXV.relative_to(SDK),
-        snapshot / NATIVE.relative_to(SDK),
-        snapshot / PACKER.relative_to(SDK),
-    )
-
-
-def sdk_report(snapshot):
-    metadata, invalid = {}, []
-    for name in ("VERSION.json", SDK_SOURCE):
-        path = snapshot / name
-        try:
-            metadata[name] = read_json(path) if path.is_file() else {}
-        except (OSError, ValueError):
-            metadata[name] = {}
-            invalid.append(name)
-    versions, provenance = metadata["VERSION.json"], metadata[SDK_SOURCE]
-    return {
-        "path": str(snapshot), "versions": versions, "commit": provenance.get("commit"),
-        "repository": provenance.get("repository"),
-        "tools": {str(path.relative_to(snapshot)): path.is_file() for path in sdk_paths(snapshot)},
-        "missingSdkFiles": [name for name in SDK_BUILD_FILES if not (snapshot / name).is_file()],
-        "invalidSdkMetadata": invalid,
-    }
-
-
-def sdk_pin(port):
-    pin = read_json(port / "sdk.lock.json")
-    commit = pin.get("commit")
-    if pin.get("repository") != SDK_REPOSITORY or not isinstance(commit, str) or not re.fullmatch(r"[a-f0-9]{40}", commit):
-        raise ValueError("sdk.lock.json: the official SDK source and a full Git commit ID are required.")
-    for name in ("sdk", "native"):
-        if not isinstance(pin.get(name), str) or not pin[name].strip():
-            raise ValueError(f"sdk.lock.json: {name} version is required.")
-    return pin
-
-
-def sdk_problem(report, pin=None):
-    versions, commit = report["versions"], report["commit"]
-    if report["invalidSdkMetadata"]:
-        return "Unreadable SDK metadata: " + ", ".join(report["invalidSdkMetadata"])
-    if not versions or report["missingSdkFiles"] or not all(report["tools"].values()):
-        return "SDK files are missing. Restore the bundled SDK or retrieve the pinned commit using SDK_UPDATES.md."
-    locales = versions.get("requiredLocales")
-    if (any(not isinstance(versions.get(key), str) or not versions[key] for key in ("os", "sdk", "native"))
-            or not isinstance(locales, list) or not locales
-            or any(not isinstance(locale, str) or not re.fullmatch(r"[a-z]{2}(?:-[A-Za-z0-9]+)*", locale) for locale in locales)):
-        return "SDK VERSION.json has invalid version or locale metadata."
-    if report["repository"] != SDK_REPOSITORY or not isinstance(commit, str) or not re.fullmatch(r"[a-f0-9]{40}", commit):
-        return f"Invalid SDK source record: {SDK_SOURCE}."
-    if pin and any(pin[name] != value for name, value in (
-        ("commit", commit), ("sdk", versions.get("sdk")), ("native", versions.get("native")),
-    )):
-        return (
-            f"Port requires commit {pin['commit']} (SDK {pin['sdk']} / Native {pin['native']}). "
-            "Select the matching snapshot with --sdk or run bootstrap --port <port> --fetch."
-        )
-    return None
-
-
 def select_sdk(override=None, pin=None):
     if override:
         return override.resolve()
@@ -250,18 +85,54 @@ def select_sdk(override=None, pin=None):
     return SDK
 
 
+@functools.lru_cache(maxsize=4)
+def installed_gcc_version(gcc):
+    try:
+        first = subprocess.run([gcc, "--version"], capture_output=True, text=True, timeout=20).stdout.splitlines()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = re.search(r"(\d+\.\d+\.\d+)", first[0]) if first else None
+    return match.group(1) if match else None
+
+
+def toolchain_versions(snapshot, devkit, windows):
+    """The compiler the SDK expects (native-kit tools/toolchain.json) against the installed devkitA64 gcc."""
+    pinned = snapshot / "Languages" / "c" / "native-kit" / "tools" / "toolchain.json"
+    expected = read_json(pinned) if pinned.is_file() else {}
+    gcc = devkit / "devkitA64/bin" / ("aarch64-none-elf-gcc.exe" if windows else "aarch64-none-elf-gcc")
+    installed = installed_gcc_version(str(gcc)) if gcc.is_file() else None
+    wanted = expected.get("gcc")
+    return {"gccExpected": wanted, "gccInstalled": installed,
+            "devkitA64Expected": expected.get("packages", {}).get("devkitA64"),
+            "gccMatches": None if not (wanted and installed) else wanted == installed}
+
+
 def devkit_path():
     if os.name == "nt":
         return Path(os.environ.get("DEVKITPRO_WIN", "C:/devkitPro"))
     return Path(os.environ.get("DEVKITPRO", "/opt/devkitpro"))
 
 
-def doctor_report(port, snapshot, pin, checkout=None):
+def doctor_report(port, snapshot, pin, checkout=None, target_os=None):
     report = sdk_report(snapshot)
     report["sdkProblem"] = sdk_problem(report, pin)
     report["studioVersion"] = STUDIO_VERSION
     import experience
     report["experienceSchema"] = experience.CURRENT_SCHEMA
+    import assess
+    caps = assess.load_capabilities()
+    include = snapshot / "Languages" / "c" / "native-kit" / "sdk" / "native" / "include" / "nexvyn"
+    apis = assess.snapshot_apis(caps, include)
+    report["platformFacts"] = {"asOf": caps["asOf"], "source": caps["source"],
+                               "missingInSnapshot": [api["symbol"] for api in apis["missing"]]}
+    # Vulkan is released from graphics.vulkan.minOs; the target OS defaults to the snapshot's OS.
+    report["vulkan"] = assess.vulkan_on_os(caps, target_os or (report.get("versions") or {}).get("os"))
+    try:  # SDK freshness: offline-safe, never changes anything
+        import sync_nexvyn_sdk
+        local = sync_nexvyn_sdk.local_paths()
+        report["sdkFreshness"] = sync_nexvyn_sdk.auto_update(local.get("osCheckout"), local.get("publicCheckout"), dry_run=True)
+    except Exception as error:  # noqa: BLE001 - doctor must not fail on a freshness probe
+        report["sdkFreshness"] = f"not checked: {error}"
     if port is not None and (port / "port.json").is_file():
         block = json.loads((port / "port.json").read_text(encoding="utf-8-sig")).get("experience")
         report["portExperience"] = None if block is None else {"schema": block.get("schema"), "profile": block.get("profile")}
@@ -296,6 +167,9 @@ def doctor_report(port, snapshot, pin, checkout=None):
     report["toolchain"]["devkitA64"] = (
         devkit / "devkitA64/bin" / ("aarch64-none-elf-gcc.exe" if windows else "aarch64-none-elf-gcc")
     ).is_file()
+    report["toolchainVersions"] = toolchain_versions(snapshot, devkit, windows)
+    report["previewCandidates"] = sorted(p.name for p in (STUDIO / "_SdkCandidates").glob("preview-*")) \
+        if (STUDIO / "_SdkCandidates").is_dir() else []
     if windows:
         bash = Path(os.environ.get("DKP_BASH", str(devkit / "msys2/usr/bin/bash.exe")))
         report["toolchain"]["devkitBash"] = str(bash) if bash.is_file() else None
@@ -308,7 +182,7 @@ def doctor_report(port, snapshot, pin, checkout=None):
 def doctor(args):
     port = port_path(args.port) if args.port else None
     pin = sdk_pin(port) if port and (port / "sdk.lock.json").is_file() else None
-    report = doctor_report(port, select_sdk(args.sdk, pin), pin, args.upstream)
+    report = doctor_report(port, select_sdk(args.sdk, pin), pin, args.upstream, getattr(args, "target_os", None))
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 1 if report["sdkProblem"] else 0
 
@@ -589,131 +463,12 @@ def build_or_stage(args):
         stage = Path(work) / "bundle"
         entries[main] = module
         copy_files(entries, stage)
+        check_no_preview_payload(stage, SDK, STUDIO / "_SdkCandidates")
         sdk_call(nxv, "check", stage)
         sdk_call(native, "check-win", stage / main)
         target.parent.mkdir(parents=True, exist_ok=True)
         os.replace(stage / main, target)
     print(f"Validated and staged module: {target.relative_to(ROOT)}")
-
-
-def local_entries(root, mappings, public_paths):
-    if bool(mappings) != bool(root):
-        raise ValueError("--data-root is required when localData mappings exist. If no data is needed, leave both empty.")
-    if not mappings:
-        return {}
-    base = Path(os.path.abspath(root))
-    if not base.is_dir():
-        raise ValueError(f"Local data folder not found: {base}")
-    for ancestor in (*reversed(base.parents), base):
-        check_path(ancestor)
-    entries = {}
-    destinations = list(public_paths)
-    for origin, dest in mappings:
-        source = under(base, origin)
-        children = list(list_files(source)) if source.is_dir() else [None]
-        if not children:
-            raise ValueError(f"Local data folder is empty: {origin}")
-        for child in children:
-            target = dest if child is None else dest / child
-            check_payload_name(origin if child is None else origin / child, public=False)
-            check_payload_name(target, public=False)
-            destinations.append(target)
-            entries[target] = source if child is None else source / child
-        count = 1 if child is None else len(children)
-        size = sum(f.stat().st_size for f in ([source] if child is None else (source / c for c in children)))
-        print(f"  local data: {origin} -> {dest}: {count:,} file(s), {size / (1 << 20):,.1f} MiB", file=sys.stderr)
-    unique_paths(destinations)
-    return entries
-
-
-def store_metadata(item, slug, *, require_screenshots=False):
-    required = {"source", "README.md", "store.json"}
-    optional = {"screenshots", "icon.png", f"{slug}.nxvapp"}
-    screenshot_names = set()
-    for entry in item.iterdir():
-        check_path(entry)
-        if entry.name not in required | optional:
-            raise ValueError(f"Unexpected entry in the Store submission folder: {entry.name}")
-        if entry.name == "screenshots":
-            for screenshot in list_files(entry):
-                if len(screenshot.parts) != 1 or screenshot.suffix != ".png":
-                    raise ValueError(f"Store screenshot must be a PNG file: {screenshot}")
-                check_screenshot(entry / screenshot)
-                screenshot_names.add(screenshot.name)
-        elif entry.name != "source" and not entry.is_file():
-            raise ValueError(f"Store entry must be a file: {entry.name}")
-    for name in ("README.md", "store.json"):
-        path = under(item, PurePosixPath(name))
-        content = path.read_text(encoding="utf-8-sig")
-        if not content.strip() or "PORT_STUDIO_TEMPLATE" in content:
-            raise ValueError(f"Store information must be completed: {name}")
-    metadata = read_json(item / "store.json")
-    if metadata.get("kind") != "port":
-        raise ValueError('The Store record requires "kind": "port".')
-    shots = metadata.get("shots")
-    if require_screenshots and (
-        not 3 <= len(screenshot_names) <= 5
-        or screenshot_names != {f"{index}.png" for index in range(1, len(screenshot_names) + 1)}
-    ):
-        raise ValueError("A Store package requires 3-5 consecutive real screenshots starting with 1.png.")
-    if len(screenshot_names) < 3 and (
-        not isinstance(shots, list) or not 3 <= len(shots) <= 5 or any(not shot for shot in shots)
-    ):
-        raise ValueError("The Store requires at least three screenshots or 3-5 SDK capture scenarios.")
-
-
-def check_screenshot(path):
-    error = ValueError(f"Invalid store screenshot: {path.name}")
-    with path.open("rb") as image:
-        if image.read(8) != b"\x89PNG\r\n\x1a\n":
-            raise error
-        header = image.read(25)
-        if len(header) != 25 or header[:8] != b"\x00\x00\x00\rIHDR":
-            raise error
-        width, height = struct.unpack_from(">II", header, 8)
-        if not width or not height or crc32(header[4:-4]) != int.from_bytes(header[-4:], "big"):
-            raise error
-        has_data = False
-        while chunk := image.read(8):
-            if len(chunk) != 8:
-                raise error
-            length, kind = struct.unpack(">I4s", chunk)
-            checksum = crc32(kind)
-            remaining = length
-            while remaining:
-                block = image.read(min(remaining, 1024 * 1024))
-                if not block:
-                    raise error
-                checksum = crc32(block, checksum)
-                remaining -= len(block)
-            expected = image.read(4)
-            if len(expected) != 4 or checksum != int.from_bytes(expected, "big"):
-                raise error
-            if kind == b"IDAT" and length:
-                has_data = True
-            if kind == b"IEND":
-                if length == 0 and has_data and image.read(1) == b"":
-                    return
-                break
-    raise error
-
-
-def check_package_limits(files, label):
-    if len(files) > 20_000 or sum(entry.file_size for entry in files) > 1 << 30:
-        raise ValueError(f"{label}: exceeds the Nexvyn OS limits of 20,000 files or 1 GiB unpacked.")
-    size = sum(entry.file_size for entry in files)
-    count = len(files)
-    if count > 1000:
-        print(f"WARNING: {label} has {count:,} files. Installing it may take very long and the Nexvyn OS install "
-              "sheet can freeze on \"Checking the package\" (older OS builds rescan the zip for every file; a 5,944-file "
-              "package sat there for minutes, a 37-file one did not). Merge or drop files, or let the player pick "
-              "the data folder instead of bundling it. Test the install on the OS build you ship to.", file=sys.stderr)
-    elif count > 500:
-        print(f"Note: {label} has {count:,} files. Install checks slow down as the count grows; above 1,000 files the "
-              "install sheet can appear frozen. Prefer fewer, larger files.", file=sys.stderr)
-    if size > 0.9 * (1 << 30):
-        print(f"Note: {label} unpacks to {size / (1 << 20):,.0f} MiB, close to the 1 GiB limit. Drop optional data first.",
-              file=sys.stderr)
 
 
 def prepare(args):
@@ -762,6 +517,7 @@ def prepare(args):
         sdk_call(nxv, "check", stage)
         sdk_call(native, "check-win", stage / main)
         copy_files(personal, stage)
+        check_no_preview_payload(stage, SDK, STUDIO / "_SdkCandidates")
         sdk_call(packer, stage, "-o", candidate)
         sdk_call(packer, "--verify", candidate)
         with ZipFile(candidate) as package:
@@ -808,11 +564,30 @@ def init_port(args):
     print(f"Port record created: {port.relative_to(ROOT)}/PORT.md")
 
 
+# Commands that own their options (including --port): name -> module whose main(argv) takes the rest.
+PASS_THROUGH = {
+    "updates": "updates", "analyze": "analyze", "assess": "assess", "experience": "experience", "bump": "bump",
+    "scaffold": "scaffold", "verify": "verify", "scenario": "scenario_run", "review": "shot_review",
+    "refresh": "platform_refresh",
+}
+
+
 def main():
     # These commands own their options (including --port), so hand them the rest unparsed.
-    if len(sys.argv) > 1 and sys.argv[1] in ("updates", "analyze", "experience", "bump"):
-        module = __import__(sys.argv[1])
+    if len(sys.argv) > 1 and sys.argv[1] in PASS_THROUGH:
+        module = __import__(PASS_THROUGH[sys.argv[1]])
         return module.main(sys.argv[2:])
+    if len(sys.argv) > 1 and sys.argv[1] == "sdk-update":
+        # Rule: the active SDK is always the newest (public release, or a local OS release as an owner pre-release).
+        import sync_nexvyn_sdk
+        sys.argv = [sync_nexvyn_sdk.__file__, "--auto", *sys.argv[2:]]
+        return sync_nexvyn_sdk.main()
+    if len(sys.argv) > 1 and sys.argv[1] == "sdk-local":
+        # sync_nexvyn_sdk.main reads sys.argv itself.
+        import sync_nexvyn_sdk
+        rest = sys.argv[2:]
+        sys.argv = [sync_nexvyn_sdk.__file__, *([] if {"-h", "--help"} & set(rest) else ["--from-local"]), *rest]
+        return sync_nexvyn_sdk.main()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", action="version", version=f"Nexvyn Port Studio {STUDIO_VERSION}")
     sub = parser.add_subparsers(dest="action", required=True)
@@ -826,6 +601,7 @@ def main():
     status.add_argument("--port")
     status.add_argument("--sdk", type=Path)
     status.add_argument("--upstream", type=Path, help="Local public OS checkout to compare.")
+    status.add_argument("--os", dest="target_os", help="Target OS version for feature checks (default: the SDK snapshot's OS).")
     setup = sub.add_parser("bootstrap", help="Verify the SDK and native build prerequisites.")
     setup.add_argument("--port")
     setup_source = setup.add_mutually_exclusive_group()
@@ -844,6 +620,16 @@ def main():
     up.add_argument("up_args", nargs=argparse.REMAINDER)
     an = sub.add_parser("analyze", help="Suggest an experience profile from a game or source folder (see analyze.py).")
     an.add_argument("an_args", nargs=argparse.REMAINDER)
+    sub.add_parser("assess", help="Feasibility report for a source or game folder: verdict, route, performance (see assess.py).")
+    sub.add_parser("scaffold", help="Create a port skeleton from an assess report (see scaffold.py).")
+    sub.add_parser("verify", help="Run every available check of a port as one PASS / FAIL / NOT_RUN table (see verify.py).")
+    sub.add_parser("scenario", help="Gameplay scenario run: launcher, menu, real play, screenshots, review (see scenario_run.py).")
+    sub.add_parser("review", help="Review an emulator run's screenshots and logs against the scenario (see shot_review.py).")
+    sub.add_parser("refresh", help="Refresh platform/capabilities.json from the SDK snapshot (see platform_refresh.py).")
+    sub.add_parser("sdk-local", help="Compare a local OS checkout with the SDK snapshot: OS_CHECKOUT [--json] [--stage] "
+                   "(runs sync_nexvyn_sdk.py --from-local).")
+    import studio_make
+    studio_make.add_parser(sub)
     xp = sub.add_parser("experience", help="Input modes, gestures, performance profiles (see experience.py).")
     xp.add_argument("xp_args", nargs=argparse.REMAINDER)
     for action in ("check", "pack"):
@@ -857,6 +643,9 @@ def main():
     try:
         if args.action == "init":
             init_port(args)
+        elif args.action == "make":
+            import studio_make
+            return studio_make.make(args, ROOT)
         elif args.action == "doctor":
             return doctor(args)
         elif args.action == "bootstrap":

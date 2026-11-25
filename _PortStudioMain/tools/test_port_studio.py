@@ -17,6 +17,9 @@ import port_market as market
 import sync_nexvyn_sdk as sdk_sync
 
 
+import studio_pack as studio_pack_mod
+ACTIVE = studio.sdk_report(studio.SDK)["versions"]  # fixtures follow the active SDK (always the newest)
+
 class PackageChannelsTest(unittest.TestCase):
     def use(self, context):
         result = context.__enter__()
@@ -48,7 +51,7 @@ class PackageChannelsTest(unittest.TestCase):
         self.write_json(self.source / "app.json", {
             "id": "com.test.fixture", "name": translations, "description": translations,
             "version": "1.2.3", "category": "games", "runtime": "native", "mode": "window",
-            "minSdk": "1.10", "targetSdk": "1.15", "minNative": "1.2", "targetNative": "1.2",
+            "minSdk": "1.10", "targetSdk": ACTIVE["sdk"], "minNative": "1.2", "targetNative": ACTIVE["native"],
             "main": "main.nxvmod", "gamepad": True, "permissions": [],
         })
         # This synthetic file only tests the package chain. It is not a runnable game.
@@ -126,6 +129,43 @@ class PackageChannelsTest(unittest.TestCase):
         self.assertEqual(self.cli("pack", "store", self.port), 1)
         self.assertIn("not listed: unlisted.bin", self.last_error)
         self.assertEqual(store.read_bytes(), before)
+
+    def test_preview_sdk_files_never_reach_a_package(self):
+        # OS 1.4.0 / SDK 1.16 headers stay out of every package until that release is public.
+        (self.source / "include").mkdir()
+        (self.source / "include/nxn_future_preview.h").write_text("/* preview */", encoding="utf-8")
+        self.use(patch.object(studio_pack_mod, "PREVIEW_HEADERS", {"nxn_future_preview.h"}))
+        self.public = sorted(p.relative_to(self.source).as_posix() for p in self.source.rglob("*") if p.is_file())
+        self.configure([{"from": "owned", "to": "game"}])
+        for args in (("pack", "store", self.port), ("pack", "local", self.port, "--data-root", self.data)):
+            self.assertEqual(self.cli(*args), 1)
+            self.assertIn("Preview-only SDK files", self.last_error)
+            self.assertIn("include/nxn_future_preview.h", self.last_error)
+        self.assertFalse((self.item / "fixture-port.nxvapp").exists())
+
+    def test_preview_candidate_content_is_caught_by_digest(self):
+        import studio_pack
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            released, candidates, stage = tmp / "sdk", tmp / "cands", tmp / "stage"
+            kit = studio_pack.PREVIEW_KIT
+            (released / kit / "include/nexvyn").mkdir(parents=True)
+            (released / kit / "include/nexvyn/nxn_sys.h").write_text("released", encoding="utf-8")
+            cand = candidates / "preview-abc"
+            (cand / kit / "include/nexvyn").mkdir(parents=True)
+            (cand / kit / "include/nexvyn/nxn_sys.h").write_text("preview 1.16", encoding="utf-8")
+            (cand / kit / "include/nexvyn/nxn_new.h").write_text("new", encoding="utf-8")
+            (cand / "PREVIEW_FILES.json").write_text(json.dumps(["include/nexvyn/nxn_sys.h", "include/nexvyn/nxn_new.h"]))
+            stage.mkdir()
+            (stage / "sys_copy.h").write_text("released", encoding="utf-8")
+            studio_pack.check_no_preview_payload(stage, released, candidates)  # released content passes
+            (stage / "sys_copy.h").write_text("preview 1.16", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                studio_pack.check_no_preview_payload(stage, released, candidates)
+            (stage / "sys_copy.h").write_text("released", encoding="utf-8")
+            (stage / "nxn_new.h").write_text("anything", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                studio_pack.check_no_preview_payload(stage, released, candidates)
 
     def test_rejects_overlap_and_missing_version_entry(self):
         self.configure([{"from": "owned/main.mix", "to": "LANG/en.json"}])
@@ -214,7 +254,6 @@ class PackageChannelsTest(unittest.TestCase):
         self.assertEqual(metadata["title"], "Fixture 1.2.3")
 
 
-class SdkSnapshotTest(unittest.TestCase):
     def test_import_uses_tracked_files_and_preserves_previous_snapshot(self):
         work = tempfile.TemporaryDirectory()
         self.addCleanup(work.cleanup)

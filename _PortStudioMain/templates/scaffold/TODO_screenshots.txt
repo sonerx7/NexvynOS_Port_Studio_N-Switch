@@ -1,0 +1,1 @@
+TODO: store screenshots. Capture them from the running port (handheld and docked); never use mock-ups.

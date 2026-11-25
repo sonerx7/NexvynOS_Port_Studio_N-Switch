@@ -37,19 +37,145 @@ def appdata_ryujinx():
     return Path(base) / "Ryujinx"
 
 
+# Machine-specific paths (Ryujinx, the OS development checkout) live only in this git-ignored file.
+LOCAL_CONFIG = ROOT / "_LocalData" / "studio_local.json"
+LAST_OS = {}   # the OS build the last find_nro() chose: {"version", "source", "path"}
+
+
+def local_config():
+    try:
+        return json.loads(LOCAL_CONFIG.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def save_local(key, value):
+    data = local_config()
+    if data.get(key) == value:
+        return
+    data[key] = value
+    LOCAL_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    LOCAL_CONFIG.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def known_ryujinx_places():
+    """Usual install folders; the first hit is remembered in the local config."""
+    home = Path.home()
+    patterns = [(home / "OneDrive", "*/ryujinx*/Ryujinx.exe"), (home / "OneDrive", "*/Ryujinx*/Ryujinx.exe"),
+                (home / "Desktop", "ryujinx*/Ryujinx.exe"), (home, "ryujinx*/Ryujinx.exe"),
+                (home / "Downloads", "ryujinx*/Ryujinx.exe"), (Path("C:/"), "Ryujinx*/Ryujinx.exe")]
+    found = []
+    for base, pattern in patterns:
+        if base.is_dir():
+            found += [p for p in base.glob(pattern) if p.is_file()]
+    return found
+
+
 def find_ryujinx(explicit=None):
-    candidates = [explicit, os.environ.get("RYUJINX_EXE"), shutil.which("Ryujinx"), shutil.which("Ryujinx.exe")]
+    candidates = [explicit, os.environ.get("RYUJINX_EXE"), local_config().get("ryujinx"),
+                  shutil.which("Ryujinx"), shutil.which("Ryujinx.exe")]
     for item in candidates:
         if item and Path(item).is_file():
             return Path(item)
+    places = known_ryujinx_places()
+    if places:
+        save_local("ryujinx", str(places[0]))
+        print(f"Ryujinx found at {places[0]} (remembered in {LOCAL_CONFIG.name})")
+        return places[0]
     return None
 
 
-def find_nro(explicit=None):
-    for item in (explicit, os.environ.get("NEXVYN_NRO"), CACHE / "NexvynOS.nro"):
+def os_version_tuple(text):
+    """'v1.3.28-beta.2' -> (1, 3, 28, 0); a final release sorts above its betas: '1.4.0' -> (1, 4, 0, 1)."""
+    import re
+    text = str(text or "")
+    numbers = [int(n) for n in re.findall(r"\d+", text.split("-")[0])[:3]]
+    numbers += [0] * (3 - len(numbers))
+    return (*numbers, 0 if "-" in text else 1)
+
+
+def sha256_matches(folder, name):
+    sums = folder / "SHA256SUMS"
+    if not sums.is_file():
+        return False
+    import hashlib
+    for line in sums.read_text(encoding="utf-8", errors="replace").splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[1].lstrip("*") == name:
+            return hashlib.sha256((folder / name).read_bytes()).hexdigest() == parts[0].lower()
+    return False
+
+
+def os_checkout():
+    value = os.environ.get("NEXVYN_OS_CHECKOUT") or local_config().get("osCheckout")
+    return Path(value) if value and Path(value).is_dir() else None
+
+
+def local_os_builds():
+    """Release builds in the OS development checkout: build/release-<version>/NexvynOS.nro, checked against SHA256SUMS."""
+    checkout = os_checkout()
+    builds = []
+    for folder in sorted(checkout.glob("build/release-*")) if checkout else []:
+        nro = folder / "NexvynOS.nro"
+        if nro.is_file() and sha256_matches(folder, "NexvynOS.nro"):
+            builds.append({"version": folder.name[len("release-"):], "source": "local OS release build", "path": nro})
+    return builds
+
+
+def public_latest_tag():
+    """Newest public release tag, or None when offline."""
+    try:
+        if shutil.which("gh"):
+            out = subprocess.run(["gh", "release", "list", "-R", OS_REPO, "--limit", "1", "--json", "tagName",
+                                  "-q", ".[0].tagName"], capture_output=True, text=True, timeout=30)
+            return out.stdout.strip() or None
+        request = urllib.request.Request(f"https://api.github.com/repos/{OS_REPO}/releases?per_page=1",
+                                         headers={"User-Agent": "nexvyn-port-studio"})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            releases = json.load(response)
+        return releases[0]["tag_name"] if releases else None
+    except Exception:
+        return None
+
+
+def os_candidates(refresh=True):
+    cached = CACHE / "NexvynOS.nro"
+    version_file = CACHE / "os_version.txt"
+    cache_version = version_file.read_text(encoding="utf-8").strip() if version_file.is_file() else None
+    if refresh:
+        tag = public_latest_tag()
+        if tag and (not cached.is_file() or os_version_tuple(tag) > os_version_tuple(cache_version)):
+            try:
+                fetch_os()
+                cache_version = version_file.read_text(encoding="utf-8").strip()
+            except (Exception, SystemExit) as error:
+                print(f"Note: could not download Nexvyn OS {tag}: {error}", file=sys.stderr)
+    candidates = local_os_builds()
+    if cached.is_file():
+        candidates.append({"version": cache_version or "unknown", "source": "public release (cache)", "path": cached})
+    return candidates
+
+
+def find_nro(explicit=None, refresh=True):
+    """Rule: the emulator always runs the newest Nexvyn OS known on this machine (public release or local release
+    build). An explicit --nro or NEXVYN_NRO still wins, but an older or unknown build is reported as such."""
+    candidates = os_candidates(refresh)
+    newest = max(candidates, key=lambda c: os_version_tuple(c["version"])) if candidates else None
+    chosen = None
+    for item in (explicit, os.environ.get("NEXVYN_NRO")):
         if item and Path(item).is_file():
-            return Path(item)
-    return None
+            chosen = {"version": "unknown (explicit)", "source": "explicit --nro / NEXVYN_NRO", "path": Path(item)}
+            break
+    chosen = chosen or newest
+    if not chosen:
+        return None
+    LAST_OS.clear()
+    LAST_OS.update(chosen, path=str(chosen["path"]))
+    print(f"Nexvyn OS {chosen['version']} ({chosen['source']}): {chosen['path']}")
+    if newest and chosen is not newest:
+        print(f"Warning: newest known Nexvyn OS is {newest['version']} ({newest['source']}); this run uses another build.",
+              file=sys.stderr)
+    return Path(chosen["path"])
 
 
 def fetch_os():
@@ -81,6 +207,17 @@ def fetch_os():
     raise SystemExit("No NexvynOS.nro asset found in recent releases.")
 
 
+def setup_profile_previous(args):
+    """Autorun for the first pass of an update test: the previous version (already unpacked into Applications) is
+    trusted, launched and left running for `wait` seconds so it writes its settings and saves, then the OS exits."""
+    sd = setup_profile(argparse.Namespace(**dict(vars(args), module=None, source=None, steps=None, data_file=None,
+                                                  skip_install=True)), True)
+    script = (f"wait 3\nsetup en\nwait 2\ncloseall\ntrust {args.app_id}\nlaunch {args.app_id}\n"
+              f"wait {args.wait}\nshot previous_version\nwait 3\nexit\n")
+    (sd / "autorun.txt").write_text(script, encoding="utf-8")
+    return sd
+
+
 def check(args):
     ok = True
     ryujinx = find_ryujinx(args.ryujinx)
@@ -92,7 +229,8 @@ def check(args):
     print(f"Keys    : {'ok' if keys.is_file() else 'MISSING (' + str(keys) + ')'}")
     ok = ok and keys.is_file()
     nro = find_nro(args.nro)
-    print(f"Nexvyn OS: {nro or 'MISSING (run: emulator_test.py fetch-os)'}")
+    if not nro:
+        print("Nexvyn OS: MISSING (run: emulator_test.py fetch-os, or set osCheckout in _LocalData/studio_local.json)")
     ok = ok and bool(nro)
     return 0 if ok else 1
 
@@ -136,16 +274,22 @@ def setup_profile(args, nro_ok):
 
     app = sd / "Applications" / f"{args.app_id}.nxvapp"
     app.mkdir(parents=True, exist_ok=True)
-    module = Path(args.module)
-    shutil.copy2(module, app / module.name)
-    for name in ("app.json", "icon.png"):
+    install = not getattr(args, "skip_install", False)  # update test, first pass: the previous version is in place
+    if not install:
+        pass
+    elif getattr(args, "source", None):  # script app: the whole bundle (app.json, main script, lang/, assets)
+        shutil.copytree(Path(args.source), app, dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__"))
+    else:
+        module = Path(args.module)
+        shutil.copy2(module, app / module.name)
+    for name in ("app.json", "icon.png") if install else ():
         if (Path(args.port) / name).is_file():
             shutil.copy2(Path(args.port) / name, app / name)
-    if (Path(args.port) / "lang").is_dir():
+    if install and (Path(args.port) / "lang").is_dir():
         shutil.copytree(Path(args.port) / "lang", app / "lang", dirs_exist_ok=True)
     # Everything the real package ships from the port folder (port.json publicFiles): logos, art, extra locales.
     config = Path(args.port) / "port.json"
-    if config.is_file():
+    if install and config.is_file():
         for entry in json.loads(config.read_text(encoding="utf-8-sig")).get("publicFiles", []):
             source = Path(args.port) / entry
             if source.is_file() and source.suffix != ".nxvmod":
@@ -208,15 +352,38 @@ def acquire_profile_lock():
     """One emulator run per profile: two runs (two people, or two AI sessions) on the same .emulator_profile
     corrupt each other's screenshots and logs. Returns the lock path, or None when another run holds it."""
     lock = PROFILE.parent / ".emulator_profile.lock"
-    if lock.is_file():
-        try:
-            holder = int(lock.read_text().strip())
-        except ValueError:
-            holder = 0
-        if holder and holder != os.getpid() and pid_alive(holder):
-            return None
-    lock.write_text(str(os.getpid()))
-    return lock
+    for _ in range(3):
+        try:  # atomic: two sessions checking at the same moment can no longer both take the profile
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                holder = int(lock.read_text().strip() or 0)
+            except (OSError, ValueError):
+                holder = 0
+            if holder == os.getpid():
+                return lock
+            if holder and pid_alive(holder):
+                return None
+            lock.unlink(missing_ok=True)  # stale: its owner is gone
+            continue
+        os.write(fd, str(os.getpid()).encode())
+        os.close(fd)
+        return lock
+    return None
+
+
+def wait_profile_lock(minutes=20):
+    """Take the shared profile, waiting up to `minutes` while another run holds it (prints once)."""
+    deadline = time.time() + minutes * 60
+    told = False
+    while True:
+        lock = acquire_profile_lock()
+        if lock or time.time() >= deadline:
+            return lock
+        if not told:
+            print(f"Another emulator run holds the profile; waiting up to {minutes} min for it to finish.", file=sys.stderr)
+            told = True
+        time.sleep(10)
 
 
 def other_ryujinx():
@@ -226,6 +393,16 @@ def other_ryujinx():
     out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Ryujinx.exe", "/FO", "CSV", "/NH"],
                          capture_output=True, text=True).stdout
     return [line.split(",")[1].strip('"') for line in out.splitlines() if line.startswith('"Ryujinx')]
+
+
+def launch_ryujinx(command):
+    """Start the emulator minimized on Windows so automated runs stay out of the user's way."""
+    if os.name != "nt":
+        return subprocess.Popen(command)
+    startup = subprocess.STARTUPINFO()
+    startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startup.wShowWindow = 2  # SW_SHOWMINIMIZED
+    return subprocess.Popen(command, startupinfo=startup)
 
 
 def run(args):
@@ -243,7 +420,7 @@ def run(args):
 
 
 def run_one(args):
-    lock = acquire_profile_lock()
+    lock = wait_profile_lock()
     if lock is None:
         print("Another emulator test is using this profile (.emulator_profile.lock). Wait for it to finish, "
               "or start yours after it; two runs on one profile corrupt each other.", file=sys.stderr)
@@ -275,7 +452,7 @@ def run_locked(args):
     if shots.exists():
         for old in shots.glob("*.png"):
             old.unlink(missing_ok=True)
-    proc = subprocess.Popen([str(ryujinx), "--root-data-dir", str(PROFILE), str(nro)])
+    proc = launch_ryujinx([str(ryujinx), "--root-data-dir", str(PROFILE), str(nro)])
     start = time.time()
     while time.time() - start < args.timeout and proc.poll() is None:
         time.sleep(2)
@@ -319,7 +496,9 @@ def main():
     runner = sub.add_parser("run")
     runner.add_argument("port")
     runner.add_argument("--app-id", required=True)
-    runner.add_argument("--module", required=True)
+    bundle = runner.add_mutually_exclusive_group(required=True)
+    bundle.add_argument("--module", help="Native module (.nxvmod).")
+    bundle.add_argument("--source", help="Script app bundle folder (contains app.json).")
     runner.add_argument("--game-dir")
     runner.add_argument("--wait", type=int, default=60, help="Seconds to wait before the screenshot.")
     runner.add_argument("--shot-name", default="launcher")

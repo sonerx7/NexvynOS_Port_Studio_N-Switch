@@ -1,0 +1,10 @@
+{
+  "app.title": "@NAME@",
+  "app.description": "TODO: one sentence about @NAME@.",
+  "ui.play": "Play",
+  "ui.settings": "Settings",
+  "ui.quit": "Quit",
+  "ui.loading": "Loading...",
+  "error.data_missing": "Game data was not found. Choose the data folder in the launcher.",
+  "error.data_incompatible": "This game data version is not supported."
+}

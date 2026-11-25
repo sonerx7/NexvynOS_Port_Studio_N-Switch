@@ -1,0 +1,1 @@
+TODO: icon.png (256x256 PNG, the app icon). Not generated: add the real artwork.

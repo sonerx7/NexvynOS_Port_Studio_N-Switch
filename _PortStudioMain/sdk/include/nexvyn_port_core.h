@@ -2,7 +2,7 @@
  * @file nexvyn_port_core.h
  * @brief Nexvyn Port Studio Core SDK - Ortak C/C++ Yardımcı Kütüphanesi
  * 
- * Klasik PC oyunları ve uygulamalarının Nintendo Switch ve modern konsollara
+ * Klasik PC oyunları ve uygulamalarının konsola ve modern platformlara
  * taşınmasında ortak fare emülasyonu, dokunmatik kontroller, çözünürlük ölçekleme
  * ve gamepad eşleştirme arayüzünü sağlar.
  */
